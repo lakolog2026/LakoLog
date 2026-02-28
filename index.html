@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LakoLog | Business Manager</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f48c06">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LakoLog">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="description" content="Your community business tracker for sales, stock, utang, and expenses.">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --p: #2563eb; --p2: #1e40af; --grad: linear-gradient(135deg,#2563eb,#1e40af); }
+        * { box-sizing: border-box; }
+        body { background:#f0f4ff; font-family:'DM Sans',sans-serif; -webkit-tap-highlight-color:transparent; }
+        h1,h2,.syne { font-family:'Syne',sans-serif; }
+        .view { display:none; }
+        .view.active { display:block; animation:fadeIn 0.18s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:200; padding:1rem; backdrop-filter:blur(3px); overflow-y:auto; }
+        .modal.active { display:flex; align-items:center; justify-content:center; }
+        .theme-blue  { --p:#2563eb; --p2:#1e40af; --grad:linear-gradient(135deg,#2563eb,#1e40af); }
+        .theme-green { --p:#059669; --p2:#065f46; --grad:linear-gradient(135deg,#10b981,#065f46); }
+        .theme-dark  { --p:#6366f1; --p2:#312e81; --grad:linear-gradient(135deg,#6366f1,#312e81); }
+        .nav-bar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; display:flex; justify-content:space-around; padding:8px 0 12px; z-index:100; box-shadow:0 -4px 20px rgba(0,0,0,0.06); }
+        .nav-btn { display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 8px; font-size:9px; font-weight:700; letter-spacing:0.05em; color:#9ca3af; border:none; background:none; cursor:pointer; border-radius:12px; font-family:'DM Sans',sans-serif; }
+        .nav-btn .icon { font-size:18px; line-height:1; }
+        .nav-btn.active { color:var(--p); }
+        .hero-card { background:var(--grad); border-radius:24px; padding:24px; color:#fff; box-shadow:0 8px 32px rgba(37,99,235,0.25); position:relative; overflow:hidden; }
+        .hero-card::after { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:rgba(255,255,255,0.07); border-radius:50%; }
+        .hero-card::before { content:''; position:absolute; bottom:-60px; left:-20px; width:200px; height:200px; background:rgba(255,255,255,0.05); border-radius:50%; }
+        .stat-card { background:#fff; border-radius:20px; padding:16px; box-shadow:0 2px 12px rgba(0,0,0,0.06); }
+        .list-card { background:#fff; border-radius:16px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 1px 6px rgba(0,0,0,0.05); margin-bottom:8px; }
+        .section-label { font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#9ca3af; margin-bottom:10px; display:block; }
+        .btn-primary { width:100%; background:var(--p); color:#fff; padding:14px; border-radius:16px; font-weight:700; font-size:14px; border:none; cursor:pointer; font-family:'Syne',sans-serif; letter-spacing:0.03em; transition:opacity 0.15s; }
+        .btn-primary:active { opacity:0.85; }
+        .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:700; }
+        input,select { font-family:'DM Sans',sans-serif; }
+        @media print { body * { visibility:hidden; } #receiptPrintArea,#receiptPrintArea * { visibility:visible; } #receiptPrintArea { position:absolute; left:0; top:0; width:100%; } }
+        #confettiCanvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999; display:none; }
+        #milestoneBanner { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; border-radius:24px; padding:28px 32px; text-align:center; z-index:1000; box-shadow:0 20px 60px rgba(0,0,0,0.2); min-width:260px; animation:fadeIn 0.3s ease; }
+        #toastBar { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:12px 20px; border-radius:16px; font-size:12px; font-weight:700; z-index:300; display:none; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.3); animation:fadeIn 0.2s ease; }
+        #onboardingOverlay { position:fixed; inset:0; background:#f0f4ff; z-index:500; overflow-y:auto; display:none; }
+        .onboard-step { display:none; } .onboard-step.active { display:block; animation:fadeIn 0.25s ease; }
+        #settingsSavedMsg { display:none; font-size:11px; color:#16a34a; font-weight:700; text-align:center; margin-top:8px; animation:fadeIn 0.2s ease; }
+        #installBanner { position:fixed; bottom:72px; left:12px; right:12px; background:#111827; color:#fff; border-radius:20px; padding:14px 16px; z-index:300; display:none; box-shadow:0 8px 32px rgba(0,0,0,0.3); animation:slideUp 0.3s ease; }
+        @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+        #iosInstallBanner { position:fixed; bottom:72px; left:12px; right:12px; background:#111827; color:#fff; border-radius:20px; padding:14px 16px; z-index:300; display:none; box-shadow:0 8px 32px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body class="pb-28 theme-blue">
+    <canvas id="confettiCanvas"></canvas>
+    <div id="milestoneBanner">
+        <div style="font-size:40px;margin-bottom:8px">🎉</div>
+        <h2 class="syne" style="font-size:20px;color:#111827;margin-bottom:4px">Milestone Reached!</h2>
+        <p id="milestoneMsg" style="font-size:13px;color:#6b7280;margin-bottom:16px"></p>
+        <button onclick="closeMilestone()" style="background:var(--p);color:#fff;border:none;padding:10px 28px;border-radius:12px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif">🙌 Keep going!</button>
+    </div>
+    <datalist id="itemNameSuggestions"></datalist>
+
+    <!-- Android install prompt -->
+    <div id="installBanner">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:24px">🏪</span>
+                <div><b style="font-size:13px">Install LakoLog</b><br><span style="font-size:11px;opacity:0.7">Add to Home Screen for offline use</span></div>
+            </div>
+            <button onclick="document.getElementById('installBanner').style.display='none'" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer">✕</button>
+        </div>
+        <button id="installBtn" style="width:100%;background:var(--p);color:#fff;border:none;padding:12px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Syne',sans-serif">📲 INSTALL APP</button>
+    </div>
+
+    <!-- iOS install instructions -->
+    <div id="iosInstallBanner">
+        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:24px">🏪</span>
+                <b style="font-size:13px">Install LakoLog on iPhone</b>
+            </div>
+            <button onclick="document.getElementById('iosInstallBanner').style.display='none';localStorage.setItem('iosDismissed','1')" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer">✕</button>
+        </div>
+        <p style="font-size:12px;opacity:0.85;line-height:1.7">Tap <b>Share</b> <span style="font-size:14px">⬆️</span> at the bottom of Safari, then tap <b>"Add to Home Screen"</b> to install the app.</p>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toastBar">
+        <span id="toastMsg"></span>
+        <button id="toastUndo" onclick="undoDelete()" style="margin-left:12px;background:#fff;color:#111827;border:none;border-radius:8px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer">UNDO</button>
+    </div>
+
+    <!-- ONBOARDING -->
+    <div id="onboardingOverlay">
+        <div style="max-width:420px;margin:0 auto;padding:32px 24px 100px">
+            <!-- Step 1: Welcome -->
+            <div class="onboard-step active" id="step1">
+                <div style="text-align:center;padding:40px 0 32px">
+                    <img src="data:image/png;base64,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" alt="LakoLog" style="width:100px;height:100px;margin:0 auto 16px;display:block;border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,0.15)">
+                    <h1 class="syne" style="font-size:28px;color:#111827;margin-bottom:8px">Welcome to<br>LakoLog!</h1>
+                    <p style="color:#6b7280;font-size:14px;line-height:1.6">Your simple business tracker for sales, stock, utang, and expenses. Let's set up your store in 3 quick steps.</p>
+                </div>
+                <button onclick="goStep(2)" class="btn-primary">GET STARTED →</button>
+            </div>
+
+            <!-- Step 2: Store Setup -->
+            <div class="onboard-step" id="step2">
+                <div style="margin-bottom:8px">
+                    <p style="font-size:11px;color:#9ca3af;font-weight:700;letter-spacing:0.1em">STEP 1 OF 3</p>
+                    <h2 class="syne" style="font-size:22px;color:#111827;margin-bottom:4px">Your Store</h2>
+                    <p style="color:#6b7280;font-size:13px;margin-bottom:24px">Tell us a bit about your business.</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <span class="section-label">Store / Business Name</span>
+                        <input type="text" id="onboardName" placeholder="e.g. Aling Nena's Store" class="w-full p-4 border-2 rounded-2xl outline-none text-sm" style="border-color:#e5e7eb">
+                    </div>
+                    <div>
+                        <span class="section-label">Currency</span>
+                        <select id="onboardCurr" class="w-full p-4 border-2 rounded-2xl bg-white text-sm outline-none" style="border-color:#e5e7eb">
+                            <option value="₱">Philippine Peso (₱)</option>
+                            <option value="$">US Dollar ($)</option>
+                            <option value="€">Euro (€)</option>
+                            <option value="£">British Pound (£)</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="goStep(3)" class="btn-primary mt-6">NEXT →</button>
+                <button onclick="goStep(1)" class="w-full text-gray-400 text-xs font-bold mt-3 border-0 bg-transparent cursor-pointer">← Back</button>
+            </div>
+
+            <!-- Step 3: Backup Reminder -->
+            <div class="onboard-step" id="step3">
+                <div style="margin-bottom:8px">
+                    <p style="font-size:11px;color:#9ca3af;font-weight:700;letter-spacing:0.1em">STEP 2 OF 3</p>
+                    <h2 class="syne" style="font-size:22px;color:#111827;margin-bottom:4px">Protect Your Data</h2>
+                    <p style="color:#6b7280;font-size:13px;margin-bottom:24px">LakoLog stores data on your device only. If you clear your browser or switch phones, data will be lost unless you back up.</p>
+                </div>
+                <div style="background:#fef3c7;border-radius:20px;padding:20px;margin-bottom:24px">
+                    <p style="font-weight:700;color:#92400e;font-size:13px;margin-bottom:8px">⚠️ Important habits:</p>
+                    <ul style="color:#78350f;font-size:12px;line-height:2">
+                        <li>📤 Export a backup from Settings regularly</li>
+                        <li>📱 Don't clear browser data or cache</li>
+                        <li>🔄 Use the same browser every time</li>
+                    </ul>
+                </div>
+                <button onclick="goStep(4)" class="btn-primary">GOT IT →</button>
+                <button onclick="goStep(2)" class="w-full text-gray-400 text-xs font-bold mt-3 border-0 bg-transparent cursor-pointer">← Back</button>
+            </div>
+
+            <!-- Step 4: All Set -->
+            <div class="onboard-step" id="step4">
+                <div style="margin-bottom:8px">
+                    <p style="font-size:11px;color:#9ca3af;font-weight:700;letter-spacing:0.1em">STEP 3 OF 3</p>
+                    <h2 class="syne" style="font-size:22px;color:#111827;margin-bottom:4px">You're all set! 🎉</h2>
+                    <p style="color:#6b7280;font-size:13px;margin-bottom:24px">Here's a quick guide to get started:</p>
+                </div>
+                <div class="space-y-3 mb-6">
+                    <div class="stat-card" style="display:flex;gap:12px;align-items:center">
+                        <span style="font-size:24px">📦</span>
+                        <div><b style="font-size:13px">Add your products first</b><br><span style="font-size:11px;color:#6b7280">Go to Stock → + Add Item</span></div>
+                    </div>
+                    <div class="stat-card" style="display:flex;gap:12px;align-items:center">
+                        <span style="font-size:24px">💰</span>
+                        <div><b style="font-size:13px">Record a sale</b><br><span style="font-size:11px;color:#6b7280">Go to Sales → search for an item</span></div>
+                    </div>
+                    <div class="stat-card" style="display:flex;gap:12px;align-items:center">
+                        <span style="font-size:24px">📋</span>
+                        <div><b style="font-size:13px">Track utang (credit)</b><br><span style="font-size:11px;color:#6b7280">Mark a sale as Unpaid or add manually in Utang</span></div>
+                    </div>
+                    <div class="stat-card" style="display:flex;gap:12px;align-items:center">
+                        <span style="font-size:24px">⚙️</span>
+                        <div><b style="font-size:13px">Back up your data</b><br><span style="font-size:11px;color:#6b7280">Settings → Backup Data (do this often!)</span></div>
+                    </div>
+                </div>
+                <button onclick="finishOnboarding()" class="btn-primary">START TRACKING →</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="warnBar" style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;text-align:center;padding:7px 16px;position:sticky;top:0;z-index:150;letter-spacing:0.03em;">
+        ⚠️ Data saved on this device only — back up regularly in Settings
+        <button onclick="document.getElementById('warnBar').style.display='none'" style="margin-left:8px;text-decoration:underline;opacity:0.7;background:none;border:none;cursor:pointer;font-weight:700;font-size:10px;">✕</button>
+    </div>
+
+    <main class="px-4 pt-4">
+
+        <!-- HOME -->
+        <section id="viewHome" class="view active">
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest" style="color:var(--p)">LakoLog</p>
+                    <h1 id="homeStoreName" class="text-2xl text-gray-900 leading-tight syne">My Store</h1>
+                </div>
+                <button onclick="openModal('settingsModal')" class="w-10 h-10 bg-white rounded-2xl shadow flex items-center justify-center text-lg">⚙️</button>
+            </div>
+
+            <div class="hero-card mb-4">
+                <p class="text-[10px] uppercase tracking-widest opacity-75 mb-1">Estimated Profit</p>
+                <h2 id="homeProfitTotal" class="text-4xl font-black mb-4 syne">₱ 0.00</h2>
+                <div class="grid grid-cols-1 gap-1 text-[11px] border-t border-white/20 pt-3 relative z-10">
+                    <div class="flex justify-between"><span class="opacity-75">Total Sales:</span><b id="homeTotalSales">₱0.00</b></div>
+                    <div class="flex justify-between pl-3"><span class="opacity-60">↳ Collected:</span><span id="homeTotalCollected" class="opacity-90">₱0.00</span></div>
+                    <div class="flex justify-between pl-3"><span class="opacity-60">↳ To Be Collected:</span><span id="homeTotalToCollect" class="opacity-90">₱0.00</span></div>
+                    <div class="flex justify-between mt-1"><span class="opacity-75">Cost of Goods Sold:</span><b id="homeTotalCosts">₱0.00</b></div>
+                    <div class="flex justify-between"><span class="opacity-75">Total Expenses:</span><b id="homeTotalExp">₱0.00</b></div>
+                </div>
+                <div id="lowStockBadge" onclick="showLowStockDetails()" class="hidden" style="position:absolute;top:16px;right:16px;background:#f97316;color:#fff;font-size:10px;padding:4px 12px;border-radius:999px;font-weight:700;cursor:pointer;z-index:10;animation:pulse 2s infinite;">⚠️ LOW STOCK</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="stat-card">
+                    <p class="text-[9px] font-bold uppercase text-gray-400 mb-1">Today's Sales</p>
+                    <p id="homeTodayAmt" class="text-xl font-black text-green-600">₱ 0.00</p>
+                    <div class="mt-1">
+                        <p class="text-[9px] text-gray-400">Collected: <span id="homeTodayPaidAmt" class="font-bold text-gray-600">₱0.00</span></p>
+                        <p class="text-[9px] text-gray-400">To Collect: <span id="homeTodayUnpaidAmt" class="font-bold text-yellow-600">₱0.00</span></p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <p class="text-[9px] font-bold uppercase text-gray-400 mb-1">All-Time Sales</p>
+                    <p id="homeAllTimeAmt" class="text-xl font-black" style="color:var(--p)">₱ 0.00</p>
+                    <div class="mt-1">
+                        <p class="text-[9px] text-gray-400">Collected: <span id="homeAllPaidAmt" class="font-bold text-gray-600">₱0.00</span></p>
+                        <p class="text-[9px] text-gray-400">To Collect: <span id="homeAllUnpaidAmt" class="font-bold text-yellow-600">₱0.00</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="homeUtangAlert" class="hidden list-card mb-3 cursor-pointer" onclick="showView('Utang')" style="border-left:4px solid #f59e0b;">
+                <div>
+                    <p class="text-[10px] font-bold uppercase text-yellow-700">Outstanding Utang</p>
+                    <p id="homeUtangAmt" class="font-black text-yellow-600 text-lg">₱0.00</p>
+                </div>
+                <span class="text-yellow-500 font-bold text-xs">View →</span>
+            </div>
+
+            <span class="section-label mt-2">Quick Actions</span>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="showView('Sales')" class="stat-card text-left cursor-pointer border-0" style="transition:transform 0.1s" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
+                    <div style="font-size:24px;margin-bottom:4px">💰</div>
+                    <p class="font-bold text-sm text-gray-800">Record Sale</p>
+                    <p class="text-[10px] text-gray-400">Sell an item</p>
+                </button>
+                <button onclick="showView('Stock')" class="stat-card text-left cursor-pointer border-0" style="transition:transform 0.1s" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
+                    <div style="font-size:24px;margin-bottom:4px">📦</div>
+                    <p class="font-bold text-sm text-gray-800">Check Stock</p>
+                    <p class="text-[10px] text-gray-400">View inventory</p>
+                </button>
+                <button onclick="showView('Utang')" class="stat-card text-left cursor-pointer border-0" style="transition:transform 0.1s" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
+                    <div style="font-size:24px;margin-bottom:4px">📋</div>
+                    <p class="font-bold text-sm text-gray-800">Utang</p>
+                    <p class="text-[10px] text-gray-400">Credit tracker</p>
+                </button>
+                <button onclick="showView('Expenses')" class="stat-card text-left cursor-pointer border-0" style="transition:transform 0.1s" onmousedown="this.style.transform='scale(0.96)'" onmouseup="this.style.transform='scale(1)'">
+                    <div style="font-size:24px;margin-bottom:4px">📉</div>
+                    <p class="font-bold text-sm text-gray-800">Expenses</p>
+                    <p class="text-[10px] text-gray-400">Log a cost</p>
+                </button>
+            </div>
+        </section>
+
+        <!-- STOCK -->
+        <section id="viewStock" class="view">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl text-gray-900 syne">Stock</h2>
+                <button onclick="openAddItem()" class="text-white px-5 py-2 rounded-xl font-bold text-sm" style="background:var(--p)">+ Add Item</button>
+            </div>
+
+            <!-- Projected Profit from Stock -->
+            <div class="bg-white rounded-2xl p-4 mb-4 cursor-pointer" style="box-shadow:0 1px 6px rgba(0,0,0,0.05);border-left:4px solid #10b981" onclick="toggleProjectedProfit()">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p style="font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9ca3af">Projected Profit from Stock</p>
+                        <p id="projectedProfitAmt" class="font-black text-lg" style="color:#059669">₱ 0.00</p>
+                    </div>
+                    <span id="projectedProfitToggle" style="font-size:11px;color:#9ca3af;font-weight:700">▼ Details</span>
+                </div>
+                <div id="projectedProfitDetail" class="hidden mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 space-y-1">
+                    <div class="flex justify-between"><span>Total projected revenue from stock:</span><b id="projStockRevenue" class="text-gray-700">₱0.00</b></div>
+                    <div class="flex justify-between"><span>Total supply cost of stock:</span><b id="projStockCost" class="text-gray-700">₱0.00</b></div>
+                </div>
+            </div>
+
+            <input type="text" id="inventorySearch" oninput="renderInventory()" placeholder="🔍 Search inventory..." class="w-full p-4 rounded-2xl mb-4 outline-none bg-white text-sm" style="border:0;box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+            <div class="overflow-x-auto rounded-2xl bg-white" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+                <table class="min-w-full text-xs">
+                    <thead class="bg-gray-50 border-b uppercase text-[10px] text-gray-400">
+                        <tr>
+                            <th class="p-4 text-left">Item</th>
+                            <th class="p-4 text-center">Stock</th>
+                            <th class="p-4 text-left">Price</th>
+                            <th class="p-4 text-left">Proj. Profit</th>
+                            <th class="p-4 text-center">Edit</th>
+                            <th class="p-4 text-center">Adj</th>
+                            <th class="p-4 text-center">Del</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SALES -->
+        <section id="viewSales" class="view">
+            <h2 class="text-xl text-gray-900 mb-4 syne">Sales</h2>
+            <input type="text" id="salesSearch" oninput="searchToSell()" placeholder="Find item to sell..." class="w-full p-4 rounded-2xl mb-4 bg-white outline-none text-sm" style="border:0;box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+            <div id="salesSearchResults" class="space-y-3 mb-6"></div>
+            <span class="section-label">Recent Sales</span>
+            <div id="salesListArea" class="space-y-2"></div>
+        </section>
+
+        <!-- UTANG -->
+        <section id="viewUtang" class="view">
+            <h2 class="text-xl text-gray-900 mb-4 syne">Utang</h2>
+            <div class="hero-card mb-5" style="background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 8px 32px rgba(245,158,11,0.25)">
+                <p class="text-[10px] uppercase tracking-widest opacity-75 mb-1">Total Outstanding</p>
+                <h2 id="utangTabTotal" class="text-3xl font-black syne">₱ 0.00</h2>
+            </div>
+            <div class="bg-white rounded-2xl p-5 mb-5" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+                <span class="section-label">Add Utang Record</span>
+                <div class="space-y-3">
+                    <input type="text" id="utangName" placeholder="Customer Name" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    <input type="text" id="utangItem" placeholder="Item / Description" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" id="utangAmount" placeholder="Amount (₱)" class="w-full p-3 border rounded-xl text-sm outline-none">
+                        <input type="date" id="utangDate" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    </div>
+                    <button onclick="addUtang()" class="btn-primary" style="background:#f59e0b">Save Utang Record</button>
+                </div>
+            </div>
+            <input type="text" id="utangSearch" oninput="renderUtang()" placeholder="🔍 Search by name..." class="w-full p-3 rounded-xl mb-4 outline-none bg-white text-sm" style="border:0;box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+            <div id="utangListArea" class="space-y-2 text-xs"></div>
+        </section>
+
+        <!-- EXPENSES -->
+        <section id="viewExpenses" class="view">
+            <h2 class="text-xl text-gray-900 mb-4 syne">Expenses</h2>
+            <div class="hero-card mb-5" style="background:linear-gradient(135deg,#ef4444,#b91c1c);box-shadow:0 8px 32px rgba(239,68,68,0.25)">
+                <p class="text-[10px] uppercase tracking-widest opacity-75 mb-1">Total Expenses</p>
+                <h2 id="expTabTotal" class="text-3xl font-black syne">₱ 0.00</h2>
+            </div>
+            <div class="bg-white rounded-2xl p-5 mb-5" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+                <span class="section-label">Record Expense</span>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" id="expDate" class="p-3 border rounded-xl text-sm outline-none">
+                        <select id="expType" onchange="toggleExpOther()" class="p-3 border rounded-xl text-sm bg-gray-50 outline-none">
+                            <option>Transportation/Delivery</option><option>Packaging Material</option>
+                            <option>Food</option><option>Communication/Internet</option>
+                            <option>Rent</option><option>Store Maintenance - Cleaning</option>
+                            <option>Utility Service - Water</option><option>Utility Service - Electricity</option>
+                            <option>Workers' Salary</option><option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <input type="text" id="expOtherType" placeholder="Specify type" class="hidden w-full p-3 border rounded-xl text-sm outline-none">
+                    <input type="number" id="expAmount" placeholder="Amount (₱)" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    <button onclick="addExpense()" class="btn-primary" style="background:#ef4444">Save Expense</button>
+                </div>
+            </div>
+            <input type="text" id="expSearch" oninput="renderExpenses()" placeholder="🔍 Search expenses..." class="w-full p-3 rounded-xl mb-4 outline-none bg-white text-sm" style="border:0;box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+            <div id="expenseListArea" class="space-y-2 text-xs"></div>
+        </section>
+
+        <!-- STATS -->
+        <section id="viewStats" class="view">
+            <h2 class="text-xl text-gray-900 mb-4 syne">Stats</h2>
+            <div class="bg-white rounded-2xl p-4 mb-4" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)">
+                <span class="section-label">Sales by Date Range</span>
+                <div class="flex gap-2">
+                    <input type="date" id="rangeStart" class="w-full p-2 text-xs border rounded-xl outline-none">
+                    <input type="date" id="rangeEnd" class="w-full p-2 text-xs border rounded-xl outline-none">
+                    <button onclick="calcCustomRange()" class="text-white px-4 rounded-xl text-xs font-bold whitespace-nowrap" style="background:var(--p)">Calc</button>
+                </div>
+                <div id="rangeResult" class="mt-2 text-sm font-black" style="color:var(--p)"></div>
+            </div>
+            <div class="bg-white rounded-2xl p-4 mb-4" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)"><span class="section-label">Top 5 Best Sellers</span><canvas id="bestSellerChart"></canvas></div>
+            <div class="bg-white rounded-2xl p-4 mb-4" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)"><span class="section-label">Daily Sales — Last 14 Days</span><canvas id="salesLineChart"></canvas></div>
+            <div class="bg-white rounded-2xl p-4 mb-4" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)"><span class="section-label">Daily Expenses — Last 14 Days</span><canvas id="expLineChart"></canvas></div>
+            <div class="bg-white rounded-2xl p-4 mb-4" style="box-shadow:0 1px 6px rgba(0,0,0,0.05)"><span class="section-label">Monthly Sales Trend</span><canvas id="monthlySalesChart"></canvas></div>
+        </section>
+    </main>
+
+    <!-- NAV -->
+    <nav class="nav-bar">
+        <button class="nav-btn active" onclick="showView('Home')" id="nav-Home"><span class="icon">🏠</span><span>HOME</span></button>
+        <button class="nav-btn" onclick="showView('Stock')" id="nav-Stock"><span class="icon">📦</span><span>STOCK</span></button>
+        <button class="nav-btn" onclick="showView('Sales')" id="nav-Sales"><span class="icon">💰</span><span>SALES</span></button>
+        <button class="nav-btn" onclick="showView('Utang')" id="nav-Utang"><span class="icon">📋</span><span>UTANG</span></button>
+        <button class="nav-btn" onclick="showView('Expenses')" id="nav-Expenses"><span class="icon">📉</span><span>EXPENSES</span></button>
+        <button class="nav-btn" onclick="showView('Stats')" id="nav-Stats"><span class="icon">📊</span><span>STATS</span></button>
+    </nav>
+
+    <!-- ADD/EDIT ITEM MODAL -->
+    <div id="addItemModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <h2 id="modalItemTitle" class="text-xl mb-4 syne">New Item</h2>
+            <input type="hidden" id="editItemId">
+            <div class="space-y-3">
+                <div><span class="section-label">Purchase Date</span><input type="date" id="addDate" class="w-full p-3 border rounded-xl outline-none text-sm"></div>
+                <div><span class="section-label">Product Name</span><input type="text" id="addItemName" list="itemNameSuggestions" autocomplete="off" class="w-full p-3 border rounded-xl outline-none text-sm"></div>
+                <div><span class="section-label">Description</span><input type="text" id="addDesc" class="w-full p-3 border rounded-xl outline-none text-sm"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div><span class="section-label">Qty</span><input type="number" id="addQty" oninput="calcItemFields()" class="w-full p-3 border rounded-xl outline-none text-sm"></div>
+                    <div><span class="section-label">Unit</span>
+                        <select id="addUnit" onchange="toggleUnitOther()" class="w-full p-3 border rounded-xl bg-gray-50 outline-none text-sm">
+                            <option>Pieces</option><option>Bottles</option><option>Cans</option><option>Packs</option><option>Kilos</option><option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <input type="text" id="addUnitOther" placeholder="Specify unit" class="hidden w-full p-3 border rounded-xl outline-none text-sm">
+                <div><span class="section-label">Total Cost (all units)</span><input type="number" id="addTotalCost" oninput="calcItemFields()" placeholder="e.g. 500" class="w-full p-3 border rounded-xl outline-none text-sm"></div>
+                <div>
+                    <span class="section-label">Cost per Unit <span style="color:#10b981">(auto-calculated)</span></span>
+                    <input type="number" id="addCost" readonly class="w-full p-3 border rounded-xl outline-none text-sm bg-gray-50" placeholder="Fill Qty & Total Cost above">
+                </div>
+                <div><span class="section-label">Selling Price per Unit</span><input type="number" id="addPrice" oninput="calcItemFields()" class="w-full p-3 border rounded-xl outline-none text-sm"></div>
+                <div style="background:#f0fdf4;border-radius:12px;padding:12px;border:1px solid #bbf7d0">
+                    <span class="section-label" style="color:#15803d;margin-bottom:4px">Projected Profit per Unit</span>
+                    <p id="addProjProfit" class="font-black text-lg" style="color:#16a34a">₱ 0.00</p>
+                </div>
+                <button onclick="saveItem()" class="btn-primary">SAVE PRODUCT</button>
+                <button onclick="closeModal('addItemModal')" class="w-full text-gray-400 text-xs font-bold mt-1">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SELL MODAL -->
+    <div id="sellModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <!-- Item summary (no print) -->
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-4 text-center">
+                <p id="receiptItem" class="font-black text-base syne"></p>
+                <div class="flex justify-between pt-2 mt-2 border-t border-dashed border-gray-200">
+                    <span id="receiptQty" class="text-sm text-gray-500">Qty: 1</span>
+                    <span id="receiptTotal" class="font-black text-lg" style="color:var(--p)"></span>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                        <p style="font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">Quantity</p>
+                        <div class="flex items-center border rounded-xl">
+                            <button onclick="changeSellQty(-1)" class="px-3 py-3 font-bold text-xl" style="color:var(--p)">−</button>
+                            <input type="number" id="sellQty" oninput="calcTotal()" class="flex-1 py-3 font-black text-xl text-center outline-none" value="1">
+                            <button onclick="changeSellQty(1)" class="px-3 py-3 font-bold text-xl" style="color:var(--p)">+</button>
+                        </div>
+                    </div>
+                    <div>
+                        <p style="font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px">Discount</p>
+                        <div class="flex border rounded-xl overflow-hidden">
+                            <input type="number" id="sellDisc" oninput="calcTotal()" class="w-20 p-3 text-sm outline-none" placeholder="0" value="0">
+                            <select id="sellDiscType" onchange="calcTotal()" class="text-xs bg-gray-50 border-l px-1 outline-none">
+                                <option value="amt">₱</option><option value="per">%</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <select id="sellPayment" onchange="toggleUtangCustomer()" class="w-full p-3 border rounded-xl bg-gray-50 font-bold text-sm outline-none">
+                    <option value="Paid">Paid</option>
+                    <option value="Unpaid">Unpaid (Utang)</option>
+                </select>
+                <div id="utangCustomerBox" class="hidden space-y-2">
+                    <input type="text" id="sellCustomerName" placeholder="Customer name (for utang)" class="w-full p-3 border rounded-xl text-sm outline-none">
+                    <input type="tel" id="sellCustomerContact" placeholder="Contact number (optional)" class="w-full p-3 border rounded-xl text-sm outline-none">
+                </div>
+                <button onclick="completeSale()" class="btn-primary" style="background:#16a34a">✓ FINALIZE SALE</button>
+                <button onclick="closeModal('sellModal')" class="w-full text-gray-400 text-xs font-bold">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT SALE MODAL -->
+    <div id="editSaleModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
+            <h2 class="text-xl mb-4 syne">Edit Sale</h2>
+            <input type="hidden" id="editSaleIdx">
+            <div class="space-y-3">
+                <div><span class="section-label">Item Name</span><input type="text" id="editSaleName" class="w-full p-3 border rounded-xl text-sm outline-none"></div>
+                <div><span class="section-label">Qty Sold</span><input type="number" id="editSaleQty" class="w-full p-3 border rounded-xl text-sm outline-none"></div>
+                <div><span class="section-label">Total Amount</span><input type="number" id="editSaleTotal" class="w-full p-3 border rounded-xl text-sm outline-none"></div>
+                <div><span class="section-label">Status</span>
+                    <select id="editSaleStatus" class="w-full p-3 border rounded-xl bg-gray-50 text-sm outline-none">
+                        <option value="Paid">Paid</option><option value="Unpaid">Unpaid</option>
+                    </select>
+                </div>
+                <div><span class="section-label">Date</span><input type="date" id="editSaleDate" class="w-full p-3 border rounded-xl text-sm outline-none"></div>
+                <button onclick="saveSaleEdit()" class="btn-primary">SAVE CHANGES</button>
+                <button onclick="closeModal('editSaleModal')" class="w-full text-gray-400 text-xs font-bold">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 overflow-y-auto max-h-[90vh] shadow-2xl">
+            <h2 class="text-xl mb-5 syne">Settings</h2>
+            <span class="section-label">Business Name</span>
+            <input type="text" id="setCompany" oninput="saveSet()" class="w-full p-3 border rounded-xl mb-4 text-sm outline-none">
+            <span class="section-label">Currency</span>
+            <select id="setCurr" onchange="saveSet()" class="w-full p-3 border rounded-xl mb-4 bg-gray-50 text-sm outline-none">
+                <option value="₱">PHP (₱)</option><option value="$">USD ($)</option><option value="€">EUR (€)</option><option value="£">GBP (£)</option>
+            </select>
+            <span class="section-label">Visual Theme</span>
+            <select id="setTheme" onchange="saveSet()" class="w-full p-3 border rounded-xl mb-4 bg-gray-50 text-sm outline-none">
+                <option value="theme-blue">Blue Pro</option><option value="theme-green">Success Green</option><option value="theme-dark">Midnight Dark</option>
+            </select>
+            <span class="section-label">Low Stock Warning Limit</span>
+            <div class="flex items-center gap-2 mb-6">
+                <input type="number" id="setLow" oninput="saveSet()" class="w-24 p-3 border rounded-xl text-sm outline-none">
+                <span class="font-bold text-gray-500 text-sm">units</span>
+            </div>
+            <span class="section-label">Profit Milestone Celebration 🎉</span>
+            <p style="font-size:11px;color:#6b7280;margin-bottom:8px">Celebrate with confetti every time profit reaches this amount (or a multiple of it). Set to 0 to disable.</p>
+            <div class="flex items-center gap-2 mb-6">
+                <input type="number" id="setMilestone" oninput="saveSet()" placeholder="e.g. 5000" class="w-32 p-3 border rounded-xl text-sm outline-none">
+                <span class="font-bold text-gray-500 text-sm">₱ per milestone</span>
+            </div>
+            <hr class="mb-4">
+            <span class="section-label">Data Management</span>
+            <p style="font-size:11px;color:#ef4444;font-weight:700;margin-bottom:12px">⚠️ Data is on this device only. Back up often to avoid losing records.</p>
+            <div class="grid grid-cols-2 gap-2 mb-5">
+                <button onclick="exportData()" class="bg-blue-50 text-blue-700 p-3 rounded-xl font-bold" style="font-size:11px">📤 Backup Data</button>
+                <label class="bg-gray-100 text-gray-700 p-3 rounded-xl font-bold text-center cursor-pointer" style="font-size:11px">
+                    📥 Import Data<input type="file" onchange="importData(event)" class="hidden">
+                </label>
+            </div>
+            <button onclick="closeModal('settingsModal')" class="btn-primary" style="background:#111827">CLOSE</button>
+            <div id="settingsSavedMsg">✓ Settings saved</div>
+        </div>
+    </div>
+
+    <!-- LOW STOCK MODAL -->
+    <div id="lowStockModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 overflow-y-auto max-h-[90vh] shadow-2xl">
+            <h2 class="text-xl mb-4 text-orange-600 syne">⚠️ Low Stock Items</h2>
+            <div id="lowStockList" class="space-y-2"></div>
+            <button onclick="closeModal('lowStockModal')" class="btn-primary mt-4" style="background:#111827">CLOSE</button>
+        </div>
+    </div>
+
+    <!-- STOCK ADJUSTMENT MODAL -->
+    <div id="adjustModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-xl mb-1 syne" style="color:#dc2626">📉 Stock Adjustment</h2>
+            <p id="adjustItemName" class="text-gray-500 text-sm mb-4"></p>
+
+            <div class="bg-red-50 rounded-2xl p-4 border border-red-100 mb-4 text-sm space-y-1">
+                <div class="flex justify-between"><span class="text-gray-500">Current Stock:</span><b id="adjustCurrentStock" class="text-gray-800"></b></div>
+                <div class="flex justify-between"><span class="text-gray-500">Cost per Unit:</span><b id="adjustCostPerUnit" class="text-gray-800"></b></div>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div>
+                    <span class="section-label">Reason</span>
+                    <select id="adjustReason" class="w-full p-3 border rounded-xl bg-gray-50 text-sm outline-none">
+                        <option value="Spoilage">Spoilage</option>
+                        <option value="Damage">Damage</option>
+                        <option value="Expired">Expired</option>
+                        <option value="Theft">Theft</option>
+                        <option value="Lost">Lost</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <span class="section-label">Units Lost</span>
+                    <input type="number" id="adjustQty" oninput="calcAdjustLoss()" placeholder="e.g. 3" class="w-full p-3 border rounded-xl text-sm outline-none">
+                </div>
+                <div>
+                    <span class="section-label">Notes (optional)</span>
+                    <input type="text" id="adjustNote" placeholder="e.g. dropped box, rat damage..." class="w-full p-3 border rounded-xl text-sm outline-none">
+                </div>
+                <div style="background:#fff7ed;border-radius:12px;padding:12px;border:1px solid #fed7aa">
+                    <span class="section-label" style="color:#c2410c;margin-bottom:4px">Estimated Loss</span>
+                    <p id="adjustLossAmt" class="font-black text-lg" style="color:#dc2626">₱ 0.00</p>
+                    <p style="font-size:10px;color:#9ca3af">Based on cost per unit × units lost</p>
+                </div>
+            </div>
+
+            <!-- Adjustment history for this item -->
+            <div id="adjustHistory" class="mb-4"></div>
+
+            <button onclick="saveAdjustment()" class="btn-primary mb-2" style="background:#dc2626">RECORD ADJUSTMENT</button>
+            <button onclick="closeModal('adjustModal')" class="w-full text-gray-400 text-xs font-bold border-0 bg-transparent cursor-pointer">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- UTANG DETAIL MODAL -->
+    <div id="utangDetailModal" class="modal">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h2 class="text-xl mb-1 text-yellow-700 syne">Utang Record</h2>
+            <p id="utangDetailName" class="text-gray-500 text-sm mb-3"></p>
+
+            <!-- Info summary -->
+            <div id="utangDetailInfo" class="bg-yellow-50 rounded-2xl p-4 border border-yellow-100 mb-3 text-sm space-y-1"></div>
+
+            <!-- Balance bar -->
+            <div id="utangBalanceBox" class="mb-4">
+                <div class="flex justify-between text-xs font-bold mb-1">
+                    <span class="text-gray-500">Balance Remaining</span>
+                    <span id="utangBalanceAmt" class="text-yellow-700"></span>
+                </div>
+                <div style="background:#fef3c7;border-radius:999px;height:8px;overflow:hidden">
+                    <div id="utangBalanceBar" style="background:#f59e0b;height:100%;border-radius:999px;transition:width 0.4s ease;width:100%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-gray-400 mt-1">
+                    <span>Paid: <b id="utangPaidSoFar" class="text-green-600"></b></span>
+                    <span>Original: <b id="utangOriginal" class="text-gray-600"></b></span>
+                </div>
+            </div>
+
+            <!-- Payment history -->
+            <div id="utangPaymentHistory" class="mb-4"></div>
+
+            <!-- Partial payment input -->
+            <div id="utangPartialBox" class="bg-gray-50 rounded-2xl p-4 border border-gray-100 mb-3">
+                <span class="section-label" style="margin-bottom:8px">Record Partial Payment</span>
+                <div class="flex gap-2">
+                    <input type="number" id="partialPaymentAmt" placeholder="Amount paid" class="flex-1 p-3 border rounded-xl text-sm outline-none">
+                    <button onclick="recordPartialPayment()" style="background:#f59e0b;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;white-space:nowrap">+ Pay</button>
+                </div>
+            </div>
+
+            <button id="utangMarkPaidBtn" onclick="markUtangPaid()" class="btn-primary mb-2" style="background:#16a34a">✅ MARK FULLY PAID</button>
+            <button onclick="deleteUtang()" class="w-full bg-red-50 text-red-600 py-3 rounded-2xl font-bold mb-2 text-sm border-0 cursor-pointer">🗑️ DELETE RECORD</button>
+            <button onclick="closeModal('utangDetailModal')" class="w-full text-gray-400 text-xs font-bold border-0 bg-transparent cursor-pointer">CANCEL</button>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('lakoLog_v1_db')) || {
+            inventory:[], sales:[], expenses:[], utang:[],
+            settings:{ company:'My Store', currency:'₱', lowStock:5, theme:'theme-blue', milestone:0, lastMilestone:0, onboarded:false, lastBackup:null, saleCount:0 }
+        };
+        if (!db.utang) db.utang = [];
+        if (db.settings.milestone === undefined) db.settings.milestone = 0;
+        if (db.settings.lastMilestone === undefined) db.settings.lastMilestone = 0;
+        if (db.settings.onboarded === undefined) db.settings.onboarded = false;
+        if (db.settings.lastBackup === undefined) db.settings.lastBackup = null;
+        if (db.settings.saleCount === undefined) db.settings.saleCount = db.sales.length;
+
+        let activeItem = null, activeUtangIdx = null, chartInstances = {};
+        let undoStack = null, undoTimer = null;
+
+        const today = () => new Date().toISOString().split('T')[0];
+        const save  = () => { localStorage.setItem('lakoLog_v1_db', JSON.stringify(db)); refresh(); };
+        const openModal  = id => document.getElementById(id).classList.add('active');
+        const closeModal = id => document.getElementById(id).classList.remove('active');
+
+        function showView(name) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('view'+name).classList.add('active');
+            const btn = document.getElementById('nav-'+name);
+            if (btn) btn.classList.add('active');
+            if (name==='Stats') renderAnalytics();
+            if (name==='Utang') renderUtang();
+            window.scrollTo(0,0);
+        }
+
+        // ── ONBOARDING ────────────────────────────────────────────
+        function goStep(n) {
+            document.querySelectorAll('.onboard-step').forEach(s=>s.classList.remove('active'));
+            document.getElementById('step'+n).classList.add('active');
+        }
+        function finishOnboarding() {
+            const name = document.getElementById('onboardName').value.trim();
+            const curr = document.getElementById('onboardCurr').value;
+            if (!name) { alert('Please enter your store name.'); return; }
+            db.settings.company = name;
+            db.settings.currency = curr;
+            db.settings.onboarded = true;
+            localStorage.setItem('lakoLog_v1_db', JSON.stringify(db));
+            document.getElementById('onboardingOverlay').style.display = 'none';
+            refresh();
+        }
+
+        // ── TOAST / UNDO ──────────────────────────────────────────
+        function showToast(msg, withUndo=false) {
+            const bar = document.getElementById('toastBar');
+            document.getElementById('toastMsg').innerText = msg;
+            document.getElementById('toastUndo').style.display = withUndo ? 'inline-block' : 'none';
+            bar.style.display = 'block';
+            if (undoTimer) clearTimeout(undoTimer);
+            undoTimer = setTimeout(() => { bar.style.display='none'; undoStack=null; }, 4000);
+        }
+        function undoDelete() {
+            if (!undoStack) return;
+            if (undoStack.type === 'sale') {
+                db.sales.splice(undoStack.idx, 0, undoStack.item);
+            } else if (undoStack.type === 'utang') {
+                db.utang.splice(undoStack.idx, 0, undoStack.item);
+            }
+            undoStack = null;
+            document.getElementById('toastBar').style.display = 'none';
+            save(); renderUtang();
+        }
+
+        // ── BACKUP NUDGE ──────────────────────────────────────────
+        function checkBackupNudge() {
+            const salesSinceBackup = db.sales.length - (db.settings.saleCount || 0);
+            const lastBackup = db.settings.lastBackup;
+            const daysSince = lastBackup
+                ? Math.floor((Date.now() - new Date(lastBackup).getTime()) / 86400000)
+                : 999;
+            if (salesSinceBackup >= 10 || daysSince >= 7) {
+                showBackupNudge();
+            }
+        }
+        function showBackupNudge() {
+            const existing = document.getElementById('backupNudge');
+            if (existing) return; // don't show twice
+            const nudge = document.createElement('div');
+            nudge.id = 'backupNudge';
+            nudge.style.cssText = 'background:#fef3c7;border:1.5px solid #f59e0b;border-radius:16px;padding:12px 16px;margin:0 16px 12px;display:flex;justify-content:space-between;align-items:center;';
+            nudge.innerHTML = `<span style="font-size:12px;color:#92400e;font-weight:700">📤 Time to back up your data!</span>
+                <div style="display:flex;gap:8px">
+                    <button onclick="exportData();dismissNudge()" style="background:#f59e0b;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer">Backup</button>
+                    <button onclick="dismissNudge()" style="background:none;border:none;color:#9ca3af;font-size:16px;cursor:pointer">✕</button>
+                </div>`;
+            document.querySelector('main').prepend(nudge);
+        }
+        function dismissNudge() {
+            const n = document.getElementById('backupNudge');
+            if (n) n.remove();
+        }
+
+
+        function saveSet() {
+            db.settings.company   = document.getElementById('setCompany').value;
+            db.settings.currency  = document.getElementById('setCurr').value;
+            db.settings.theme     = document.getElementById('setTheme').value;
+            db.settings.lowStock  = parseInt(document.getElementById('setLow').value)||5;
+            db.settings.milestone = parseFloat(document.getElementById('setMilestone').value)||0;
+            document.body.className = 'pb-28 '+db.settings.theme;
+            save();
+            const msg = document.getElementById('settingsSavedMsg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display='none', 2000);
+        }
+        function exportData() {
+            db.settings.lastBackup = new Date().toISOString();
+            db.settings.saleCount = db.sales.length;
+            localStorage.setItem('lakoLog_v1_db', JSON.stringify(db));
+            dismissNudge();
+            const a = document.createElement('a');
+            a.href = 'data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(db));
+            a.download = 'lakoLog_backup_'+today()+'.json';
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+        function importData(e) {
+            const r = new FileReader();
+            r.onload = ev => {
+                try { db = JSON.parse(ev.target.result); if(!db.utang) db.utang=[]; save(); location.reload(); }
+                catch { alert('Invalid backup file.'); }
+            };
+            r.readAsText(e.target.files[0]);
+        }
+
+        // ── INVENTORY ─────────────────────────────────────────────
+        function openAddItem() {
+            document.getElementById('editItemId').value='';
+            document.getElementById('modalItemTitle').innerText='New Item';
+            document.getElementById('addDate').value=today();
+            ['addItemName','addDesc','addQty','addTotalCost','addPrice'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('addCost').value='';
+            document.getElementById('addProjProfit').innerText='₱ 0.00';
+            document.getElementById('addUnit').value='Pieces';
+            document.getElementById('addUnitOther').classList.add('hidden');
+            openModal('addItemModal');
+        }
+        function editItem(id) {
+            const item = db.inventory.find(i=>i.id===id); if(!item) return;
+            document.getElementById('editItemId').value=item.id;
+            document.getElementById('modalItemTitle').innerText='Edit Item';
+            document.getElementById('addDate').value=item.date||today();
+            document.getElementById('addItemName').value=item.name;
+            document.getElementById('addDesc').value=item.desc||'';
+            document.getElementById('addQty').value=item.qty;
+            document.getElementById('addUnit').value=item.unit;
+            document.getElementById('addTotalCost').value=(item.cost * item.qty).toFixed(2);
+            document.getElementById('addCost').value=item.cost.toFixed(2);
+            document.getElementById('addPrice').value=item.price;
+            document.getElementById('addProjProfit').innerText=`${db.settings.currency} ${(item.price - item.cost).toFixed(2)}`;
+            toggleUnitOther(); openModal('addItemModal');
+        }
+        function deleteItem(id) {
+            if(confirm("Delete this item? It will be hidden from Stock but past sales will be preserved.")) {
+                // Soft delete — keep as ghost so sales history still references it
+                const item = db.inventory.find(i=>i.id===id);
+                if(item) item.deleted = true;
+                save();
+            }
+        }
+        function openAdjustModal(id) {
+            const item=db.inventory.find(i=>i.id===id);
+            if(!item) return;
+            document.getElementById('adjustItemName').innerText=item.name;
+            document.getElementById('adjustCurrentStock').innerText=`${item.qty} ${item.unit}`;
+            document.getElementById('adjustCostPerUnit').innerText=`${db.settings.currency}${item.cost.toFixed(2)}`;
+            document.getElementById('adjustQty').value='';
+            document.getElementById('adjustNote').value='';
+            document.getElementById('adjustReason').value='Spoilage';
+            document.getElementById('adjustLossAmt').innerText=`${db.settings.currency} 0.00`;
+            document.getElementById('adjustModal').dataset.itemId=id;
+            // History
+            const hist=document.getElementById('adjustHistory');
+            if(item.adjustments && item.adjustments.length>0){
+                hist.innerHTML=`<span class="section-label">Adjustment History</span>`;
+                item.adjustments.slice().reverse().forEach(a=>{
+                    hist.innerHTML+=`<div style="display:flex;justify-content:space-between;align-items:start;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px">
+                        <div><span style="color:#dc2626;font-weight:700">${a.reason}</span> · ${a.qty} units<br><span style="font-size:10px;color:#9ca3af">${a.date}${a.note?' · '+a.note:''}</span></div>
+                        <span style="font-weight:700;color:#dc2626;white-space:nowrap;margin-left:8px">−${db.settings.currency}${a.lossValue.toFixed(2)}</span>
+                    </div>`;
+                });
+            } else { hist.innerHTML=''; }
+            openModal('adjustModal');
+        }
+        function calcAdjustLoss() {
+            const id=parseInt(document.getElementById('adjustModal').dataset.itemId);
+            const item=db.inventory.find(i=>i.id===id);
+            if(!item) return;
+            const qty=parseFloat(document.getElementById('adjustQty').value)||0;
+            const loss=qty*item.cost;
+            document.getElementById('adjustLossAmt').innerText=`${db.settings.currency} ${loss.toFixed(2)}`;
+        }
+        function saveAdjustment() {
+            const id=parseInt(document.getElementById('adjustModal').dataset.itemId);
+            const item=db.inventory.find(i=>i.id===id);
+            if(!item) return;
+            const qty=parseInt(document.getElementById('adjustQty').value);
+            if(!qty||qty<=0){alert('Enter a valid number of units.');return;}
+            if(qty>item.qty){alert(`Cannot remove more than current stock (${item.qty} ${item.unit}).`);return;}
+            const reason=document.getElementById('adjustReason').value;
+            const note=document.getElementById('adjustNote').value.trim();
+            const lossValue=qty*item.cost;
+            if(!item.adjustments) item.adjustments=[];
+            item.adjustments.push({date:today(),reason,qty,lossValue,note});
+            item.qty-=qty;
+            closeModal('adjustModal');
+            save();
+        }
+        function toggleUnitOther() {
+            document.getElementById('addUnitOther').classList.toggle('hidden', document.getElementById('addUnit').value!=='Other');
+        }
+        function calcItemFields() {
+            const qty = parseFloat(document.getElementById('addQty').value) || 0;
+            const totalCost = parseFloat(document.getElementById('addTotalCost').value) || 0;
+            const price = parseFloat(document.getElementById('addPrice').value) || 0;
+            const costPerUnit = qty > 0 ? totalCost / qty : 0;
+            document.getElementById('addCost').value = qty > 0 ? costPerUnit.toFixed(4) : '';
+            const projProfit = price - costPerUnit;
+            document.getElementById('addProjProfit').innerText = `${db.settings.currency} ${projProfit.toFixed(2)}`;
+            document.getElementById('addProjProfit').style.color = projProfit >= 0 ? '#16a34a' : '#dc2626';
+        }
+        function saveItem() {
+            const name=document.getElementById('addItemName').value.trim();
+            const qty=parseInt(document.getElementById('addQty').value);
+            const totalCost=parseFloat(document.getElementById('addTotalCost').value);
+            const price=parseFloat(document.getElementById('addPrice').value);
+            if(!name||isNaN(qty)||isNaN(totalCost)||isNaN(price)){alert('Fill all required fields.');return;}
+            const cost = totalCost / qty;
+            const id=document.getElementById('editItemId').value;
+            const us=document.getElementById('addUnit').value;
+            const unit=us==='Other'?document.getElementById('addUnitOther').value:us;
+            const item={id:id?parseInt(id):Date.now(), date:document.getElementById('addDate').value, name, desc:document.getElementById('addDesc').value, qty, unit, cost, totalCost, price};
+            if(id){db.inventory[db.inventory.findIndex(i=>i.id===parseInt(id))]=item;}
+            else{db.inventory.push(item);}
+            closeModal('addItemModal'); save();
+        }
+        function renderInventory() {
+            const body=document.getElementById('inventoryTableBody');
+            const term=document.getElementById('inventorySearch').value.toLowerCase();
+            body.innerHTML=''; let low=false;
+            let projRevenue=0, projCost=0;
+            db.inventory.filter(i=>!i.deleted && i.name.toLowerCase().includes(term)).forEach(i=>{
+                const isLow=i.qty<=db.settings.lowStock; if(isLow) low=true;
+                const projProfitPerUnit = i.price - i.cost;
+                const projProfitTotal = projProfitPerUnit * i.qty;
+                projRevenue += i.price * i.qty;
+                projCost += i.cost * i.qty;
+                const profitColor = projProfitPerUnit >= 0 ? '#16a34a' : '#dc2626';
+                const hasLosses = i.adjustments && i.adjustments.length > 0;
+                body.innerHTML+=`<tr class="border-b ${isLow?'bg-orange-50':''}" style="cursor:pointer">
+                    <td class="p-4" onclick="editItem(${i.id})">
+                        <b style="font-size:12px">${i.name}</b>
+                        ${hasLosses?`<span style="font-size:9px;background:#fee2e2;color:#dc2626;padding:2px 6px;border-radius:999px;font-weight:700;margin-left:4px">LOSS</span>`:''}
+                        <br><span style="font-size:10px;color:#9ca3af">${i.desc||''}</span>
+                    </td>
+                    <td class="p-4 text-center font-black" style="font-size:12px;color:${isLow?'#ea580c':''}">${i.qty}<br><span style="font-size:10px;font-weight:400;color:#9ca3af">${i.unit}</span></td>
+                    <td class="p-4" style="font-size:12px;font-weight:700">${db.settings.currency}${i.price.toFixed(2)}</td>
+                    <td class="p-4" style="font-size:11px;font-weight:700;color:${profitColor}">${db.settings.currency}${projProfitPerUnit.toFixed(2)}/u<br><span style="font-size:10px;font-weight:400;color:#9ca3af">total: ${db.settings.currency}${projProfitTotal.toFixed(2)}</span></td>
+                    <td class="p-4 text-center"><button onclick="event.stopPropagation();editItem(${i.id})" style="color:#60a5fa;font-size:13px;background:none;border:1px solid #e5e7eb;border-radius:8px;padding:3px 7px;cursor:pointer">✏️</button></td>
+                    <td class="p-4 text-center"><button onclick="event.stopPropagation();openAdjustModal(${i.id})" style="color:#f97316;font-size:13px;background:none;border:1px solid #e5e7eb;border-radius:8px;padding:3px 7px;cursor:pointer">📉</button></td>
+                    <td class="p-4 text-center"><button onclick="event.stopPropagation();deleteItem(${i.id})" style="color:#f87171;font-size:13px;background:none;border:1px solid #e5e7eb;border-radius:8px;padding:3px 7px;cursor:pointer">🗑️</button></td>
+                </tr>`;
+            });
+            const badge=document.getElementById('lowStockBadge');
+            if(badge) badge.style.display=low?'block':'none';
+
+            // Total losses across all items
+            const totalLossUnits=db.inventory.reduce((a,i)=>{
+                if(!i.adjustments) return a;
+                return a+i.adjustments.reduce((b,adj)=>b+adj.qty,0);
+            },0);
+            const totalLossValue=db.inventory.reduce((a,i)=>{
+                if(!i.adjustments) return a;
+                return a+i.adjustments.reduce((b,adj)=>b+adj.lossValue,0);
+            },0);
+
+            const projProfit = projRevenue - projCost;
+            const cur = db.settings.currency;
+            document.getElementById('projectedProfitAmt').innerText=`${cur} ${projProfit.toFixed(2)}`;
+            document.getElementById('projectedProfitAmt').style.color = projProfit >= 0 ? '#059669' : '#dc2626';
+            document.getElementById('projStockRevenue').innerText=`${cur}${projRevenue.toFixed(2)}`;
+            document.getElementById('projStockCost').innerText=`${cur}${projCost.toFixed(2)}`;
+
+            // Show losses line in detail if any
+            let lossLine=document.getElementById('projLossLine');
+            if(totalLossValue>0){
+                if(!lossLine){
+                    const detail=document.getElementById('projectedProfitDetail');
+                    const div=document.createElement('div');
+                    div.id='projLossLine';
+                    div.className='flex justify-between';
+                    div.style.color='#dc2626';
+                    detail.appendChild(div);
+                    lossLine=div;
+                }
+                lossLine.innerHTML=`<span>Total loss from adjustments (${totalLossUnits} units):</span><b>−${cur}${totalLossValue.toFixed(2)}</b>`;
+            } else if(lossLine){ lossLine.remove(); }
+        }
+        function toggleProjectedProfit() {
+            const detail = document.getElementById('projectedProfitDetail');
+            const toggle = document.getElementById('projectedProfitToggle');
+            const hidden = detail.classList.toggle('hidden');
+            toggle.innerText = hidden ? '▼ Details' : '▲ Hide';
+        }
+        function showLowStockDetails() {
+            const lowItems=db.inventory.filter(i=>i.qty<=db.settings.lowStock);
+            const list=document.getElementById('lowStockList');
+            list.innerHTML=lowItems.length?'':'<p style="text-align:center;color:#9ca3af">No low stock items.</p>';
+            lowItems.forEach(i=>{list.innerHTML+=`<div style="background:#fff7ed;padding:12px;border-radius:12px;border:1px solid #fed7aa"><b>${i.name}</b><br><span style="font-size:12px;color:#ea580c">Only ${i.qty} remaining</span></div>`;});
+            openModal('lowStockModal');
+        }
+
+        // ── SALES ─────────────────────────────────────────────────
+        function toggleUtangCustomer() {
+            document.getElementById('utangCustomerBox').classList.toggle('hidden', document.getElementById('sellPayment').value!=='Unpaid');
+        }
+        function searchToSell() {
+            const term=document.getElementById('salesSearch').value.toLowerCase();
+            const res=document.getElementById('salesSearchResults'); res.innerHTML='';
+            if(!term) return;
+            db.inventory.filter(i=>!i.deleted && i.name.toLowerCase().includes(term)&&i.qty>0).forEach(i=>{
+                res.innerHTML+=`<div class="list-card">
+                    <div><b style="font-size:13px">${i.name}</b><br><span style="font-size:10px;color:#9ca3af">${i.qty} available · ${db.settings.currency}${i.price.toFixed(2)}</span></div>
+                    <button onclick="prepSale(${i.id})" style="background:var(--p);color:#fff;padding:8px 16px;border-radius:12px;font-size:12px;font-weight:700;border:none;cursor:pointer">SELL</button>
+                </div>`;
+            });
+        }
+        function prepSale(id) {
+            activeItem=db.inventory.find(i=>i.id===id);
+            document.getElementById('sellQty').value=1;
+            document.getElementById('sellDisc').value=0;
+            document.getElementById('sellDiscType').value='amt';
+            document.getElementById('sellPayment').value='Paid';
+            document.getElementById('sellCustomerName').value='';
+            document.getElementById('sellCustomerContact').value='';
+            document.getElementById('utangCustomerBox').classList.add('hidden');
+            document.getElementById('receiptItem').innerText=activeItem.name;
+            calcTotal(); openModal('sellModal');
+        }
+        function changeSellQty(d) {
+            const el=document.getElementById('sellQty');
+            el.value=Math.max(1,(parseInt(el.value)||1)+d); calcTotal();
+        }
+        function calcTotal() {
+            if(!activeItem) return 0;
+            const q=parseInt(document.getElementById('sellQty').value)||0;
+            const dv=parseFloat(document.getElementById('sellDisc').value)||0;
+            const dt=document.getElementById('sellDiscType').value;
+            let total=activeItem.price*q;
+            total=Math.max(0,total-(dt==='per'?total*(dv/100):dv));
+            document.getElementById('receiptQty').innerText=`Qty: ${q} ${activeItem.unit}`;
+            document.getElementById('receiptTotal').innerText=`${db.settings.currency}${total.toFixed(2)}`;
+            return total;
+        }
+        function completeSale() {
+            const qty=parseInt(document.getElementById('sellQty').value);
+            const status=document.getElementById('sellPayment').value;
+            if(qty>activeItem.qty){alert('Not enough stock!');return;}
+            const finalTotal=calcTotal();
+            const saleId=Date.now();
+            db.sales.push({id:saleId,name:activeItem.name,qty,total:finalTotal,profit:finalTotal-(activeItem.cost*qty),costBasis:activeItem.cost*qty,status,date:today()});
+            if(status==='Unpaid'){
+                const cname=document.getElementById('sellCustomerName').value.trim()||'Unknown Customer';
+                const contact=document.getElementById('sellCustomerContact').value.trim();
+                db.utang.push({id:saleId+1,customer:cname,contact,item:activeItem.name,amount:finalTotal,balance:finalTotal,payments:[],date:today(),paid:false,saleRef:saleId});
+            }
+            activeItem.qty-=qty;
+            document.getElementById('salesSearch').value='';
+            document.getElementById('salesSearchResults').innerHTML='';
+            save(); closeModal('sellModal');
+        }
+        function renderSales() {
+            const area=document.getElementById('salesListArea'); area.innerHTML='';
+            if(!db.sales.length){area.innerHTML='<p style="text-align:center;color:#9ca3af;padding:16px;font-size:14px">No sales recorded yet.</p>';return;}
+            db.sales.slice().reverse().slice(0,40).forEach((s,ri)=>{
+                const realIdx=db.sales.length-1-ri;
+                const badgeStyle=s.status==='Paid'?'background:#dcfce7;color:#166534':'background:#fef9c3;color:#854d0e';
+                area.innerHTML+=`<div class="list-card">
+                    <div><b style="font-size:13px">${s.name}</b>
+                    <span class="pill" style="${badgeStyle};margin-left:4px">${s.status}</span><br>
+                    <span style="font-size:10px;color:#9ca3af">${s.date} · qty: ${s.qty}</span></div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span style="font-weight:900;font-size:13px">${db.settings.currency}${s.total.toFixed(2)}</span>
+                        <button onclick="openEditSale(${realIdx})" style="color:#60a5fa;font-size:11px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:none;cursor:pointer">✏️</button>
+                        <button onclick="deleteSale(${realIdx})" style="color:#f87171;font-size:11px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:8px;background:none;cursor:pointer">🗑️</button>
+                    </div>
+                </div>`;
+            });
+        }
+        function openEditSale(idx) {
+            const s=db.sales[idx];
+            document.getElementById('editSaleIdx').value=idx;
+            document.getElementById('editSaleName').value=s.name;
+            document.getElementById('editSaleQty').value=s.qty;
+            document.getElementById('editSaleTotal').value=s.total;
+            document.getElementById('editSaleStatus').value=s.status;
+            document.getElementById('editSaleDate').value=s.date;
+            openModal('editSaleModal');
+        }
+        function saveSaleEdit() {
+            const idx=parseInt(document.getElementById('editSaleIdx').value);
+            Object.assign(db.sales[idx],{
+                name:document.getElementById('editSaleName').value.trim(),
+                qty:parseInt(document.getElementById('editSaleQty').value),
+                total:parseFloat(document.getElementById('editSaleTotal').value),
+                status:document.getElementById('editSaleStatus').value,
+                date:document.getElementById('editSaleDate').value
+            });
+            closeModal('editSaleModal'); save();
+        }
+        function deleteSale(idx) {
+            const removed = db.sales.splice(idx, 1)[0];
+            undoStack = { type:'sale', item:removed, idx };
+            save();
+            showToast('Sale deleted', true);
+        }
+
+        // ── UTANG ─────────────────────────────────────────────────
+        function addUtang() {
+            const customer=document.getElementById('utangName').value.trim();
+            const amount=parseFloat(document.getElementById('utangAmount').value);
+            if(!customer||!amount||amount<=0){alert('Customer name and amount are required.');return;}
+            db.utang.push({
+                id:Date.now(), customer,
+                item:document.getElementById('utangItem').value.trim(),
+                amount, balance:amount, payments:[],
+                date:document.getElementById('utangDate').value||today(),
+                paid:false
+            });
+            ['utangName','utangItem','utangAmount'].forEach(id=>document.getElementById(id).value='');
+            save(); renderUtang();
+        }
+        function renderUtang() {
+            const area=document.getElementById('utangListArea');
+            const term=(document.getElementById('utangSearch')?.value||'').toLowerCase();
+            area.innerHTML='';
+            // migrate old records that don't have balance/payments
+            db.utang.forEach(u=>{ if(u.balance===undefined) u.balance=u.amount; if(!u.payments) u.payments=[]; });
+            const unpaid=db.utang.filter(u=>!u.paid&&u.customer.toLowerCase().includes(term));
+            if(!unpaid.length){area.innerHTML='<p style="text-align:center;color:#9ca3af;padding:16px;font-size:14px">No unpaid utang records.</p>';return;}
+            unpaid.forEach(u=>{
+                const idx=db.utang.indexOf(u);
+                const hasPartial = u.payments && u.payments.length > 0;
+                area.innerHTML+=`<div onclick="openUtangDetail(${idx})" class="list-card" style="border-left:4px solid ${hasPartial?'#10b981':'#f59e0b'};cursor:pointer">
+                    <div>
+                        <b style="font-size:13px">${u.customer}</b>
+                        ${hasPartial?`<span style="font-size:9px;background:#dcfce7;color:#15803d;padding:2px 6px;border-radius:999px;font-weight:700;margin-left:4px">PARTIAL</span>`:''}
+                        <br><span style="font-size:10px;color:#6b7280">${u.item||'No item'} · ${u.date}</span>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-weight:900;color:#d97706;font-size:13px">${db.settings.currency}${u.balance.toFixed(2)}</div>
+                        ${hasPartial?`<div style="font-size:10px;color:#9ca3af">of ${db.settings.currency}${u.amount.toFixed(2)}</div>`:''}
+                    </div>
+                </div>`;
+            });
+        }
+        function openUtangDetail(idx) {
+            activeUtangIdx=idx;
+            const u=db.utang[idx];
+            // migrate
+            if(u.balance===undefined) u.balance=u.amount;
+            if(!u.payments) u.payments=[];
+            const cur=db.settings.currency;
+            const paidSoFar=u.amount-u.balance;
+
+            document.getElementById('utangDetailName').innerText=u.customer;
+            document.getElementById('utangDetailInfo').innerHTML=`
+                <p><b>Item:</b> ${u.item||'N/A'}</p>
+                <p><b>Original Amount:</b> ${cur}${u.amount.toFixed(2)}</p>
+                <p><b>Date:</b> ${u.date}</p>
+                ${u.contact?`<p><b>Contact:</b> ${u.contact}</p>`:''}
+                <p><b>Status:</b> ${u.paid?'✅ Fully Paid':u.payments.length>0?'⏳ Partially Paid':'⏳ Unpaid'}</p>`;
+
+            // Balance bar
+            const pct=Math.max(0,(u.balance/u.amount)*100);
+            document.getElementById('utangBalanceAmt').innerText=`${cur}${u.balance.toFixed(2)} remaining`;
+            document.getElementById('utangBalanceBar').style.width=pct+'%';
+            document.getElementById('utangPaidSoFar').innerText=`${cur}${paidSoFar.toFixed(2)}`;
+            document.getElementById('utangOriginal').innerText=`${cur}${u.amount.toFixed(2)}`;
+
+            // Payment history
+            const hist=document.getElementById('utangPaymentHistory');
+            if(u.payments.length>0){
+                hist.innerHTML=`<span class="section-label">Payment History</span>`;
+                u.payments.forEach((p,pi)=>{
+                    hist.innerHTML+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:12px">
+                        <span style="color:#6b7280">📅 ${p.date}</span>
+                        <span style="font-weight:700;color:#16a34a">+${cur}${p.amount.toFixed(2)}</span>
+                    </div>`;
+                });
+                hist.innerHTML+=`<div style="height:8px"></div>`;
+            } else { hist.innerHTML=''; }
+
+            // Show/hide partial box and mark paid button
+            document.getElementById('utangPartialBox').style.display=u.paid?'none':'block';
+            document.getElementById('utangMarkPaidBtn').style.display=u.paid?'none':'block';
+            document.getElementById('partialPaymentAmt').value='';
+            openModal('utangDetailModal');
+        }
+        function recordPartialPayment() {
+            const amt=parseFloat(document.getElementById('partialPaymentAmt').value);
+            if(!amt||amt<=0){alert('Enter a valid payment amount.');return;}
+            const u=db.utang[activeUtangIdx];
+            if(amt>u.balance){alert(`Amount exceeds remaining balance of ${db.settings.currency}${u.balance.toFixed(2)}`);return;}
+            u.payments.push({date:today(),amount:amt});
+            u.balance=parseFloat((u.balance-amt).toFixed(2));
+            if(u.balance<=0){
+                u.balance=0; u.paid=true;
+                const ref=u.saleRef;
+                if(ref){const s=db.sales.find(s=>s.id===ref);if(s)s.status='Paid';}
+                closeModal('utangDetailModal');
+                save(); renderUtang();
+                return;
+            }
+            save();
+            openUtangDetail(activeUtangIdx); // refresh modal
+        }
+        function markUtangPaid() {
+            if(activeUtangIdx===null) return;
+            db.utang[activeUtangIdx].paid=true;
+            const ref=db.utang[activeUtangIdx].saleRef;
+            if(ref){const s=db.sales.find(s=>s.id===ref);if(s)s.status='Paid';}
+            closeModal('utangDetailModal'); save(); renderUtang();
+        }
+        function deleteUtang() {
+            const removed = db.utang.splice(activeUtangIdx, 1)[0];
+            undoStack = { type:'utang', item:removed, idx:activeUtangIdx };
+            activeUtangIdx = null;
+            closeModal('utangDetailModal');
+            save(); renderUtang();
+            showToast('Utang record deleted', true);
+        }
+
+        // ── EXPENSES ──────────────────────────────────────────────
+        function toggleExpOther() {
+            document.getElementById('expOtherType').classList.toggle('hidden',document.getElementById('expType').value!=='Other');
+        }
+        function addExpense() {
+            const amt=parseFloat(document.getElementById('expAmount').value);
+            const type=document.getElementById('expType').value;
+            if(!amt||amt<=0){alert('Enter a valid amount.');return;}
+            db.expenses.push({date:document.getElementById('expDate').value||today(),amount:amt,type:type==='Other'?document.getElementById('expOtherType').value:type});
+            document.getElementById('expAmount').value=''; save();
+        }
+        function renderExpenses() {
+            const area=document.getElementById('expenseListArea');
+            const term=document.getElementById('expSearch').value.toLowerCase();
+            area.innerHTML='';
+            const filtered=db.expenses.slice().reverse().filter(e=>e.type.toLowerCase().includes(term));
+            if(!filtered.length){area.innerHTML='<p style="text-align:center;color:#9ca3af;padding:16px;font-size:14px">No expenses recorded.</p>';return;}
+            filtered.forEach(e=>{
+                area.innerHTML+=`<div class="list-card">
+                    <div><b style="font-size:13px">${e.type}</b><br><span style="font-size:10px;color:#9ca3af">${e.date}</span></div>
+                    <span style="font-weight:900;color:#ef4444;font-size:13px">${db.settings.currency}${e.amount.toFixed(2)}</span>
+                </div>`;
+            });
+        }
+
+        // ── ANALYTICS ─────────────────────────────────────────────
+        function getLast14() {
+            return Array.from({length:14},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(13-i));return d.toISOString().split('T')[0];});
+        }
+        function calcCustomRange() {
+            const start=document.getElementById('rangeStart').value, end=document.getElementById('rangeEnd').value;
+            if(!start||!end) return;
+            const f=db.sales.filter(s=>s.date>=start&&s.date<=end);
+            const total=f.reduce((a,b)=>a+b.total,0), profit=f.reduce((a,b)=>a+(b.profit||0),0);
+            document.getElementById('rangeResult').innerHTML=`Sales: ${db.settings.currency}${total.toFixed(2)} · Est. Profit: ${db.settings.currency}${profit.toFixed(2)}`;
+        }
+        function renderAnalytics() {
+            Object.values(chartInstances).forEach(c=>c.destroy()); chartInstances={};
+            const byProd={};
+            db.sales.forEach(s=>byProd[s.name]=(byProd[s.name]||0)+s.qty);
+            const top5=Object.entries(byProd).sort((a,b)=>b[1]-a[1]).slice(0,5);
+            chartInstances.best=new Chart(document.getElementById('bestSellerChart'),{
+                type:'bar',
+                data:{labels:top5.map(p=>p[0]),datasets:[{data:top5.map(p=>p[1]),backgroundColor:'#2563eb',borderRadius:8}]},
+                options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,title:{display:true,text:'Units Sold',font:{size:11},color:'#9ca3af'}}}}
+            });
+            const last14=getLast14(), dSales={}, dExp={};
+            db.sales.forEach(s=>dSales[s.date]=(dSales[s.date]||0)+s.total);
+            db.expenses.forEach(e=>dExp[e.date]=(dExp[e.date]||0)+e.amount);
+            const cur=db.settings.currency;
+            chartInstances.salesLine=new Chart(document.getElementById('salesLineChart'),{
+                type:'line',
+                data:{labels:last14.map(d=>d.substring(5)),datasets:[{data:last14.map(d=>dSales[d]||0),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',tension:0.4,fill:true,pointRadius:3}]},
+                options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,title:{display:true,text:`Revenue (${cur})`,font:{size:11},color:'#9ca3af'}}}}
+            });
+            chartInstances.expLine=new Chart(document.getElementById('expLineChart'),{
+                type:'line',
+                data:{labels:last14.map(d=>d.substring(5)),datasets:[{data:last14.map(d=>dExp[d]||0),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',tension:0.4,fill:true,pointRadius:3}]},
+                options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,title:{display:true,text:`Amount (${cur})`,font:{size:11},color:'#9ca3af'}}}}
+            });
+            const byMonth={};
+            db.sales.forEach(s=>{const m=s.date.substring(0,7);byMonth[m]=(byMonth[m]||0)+s.total;});
+            const months=Object.keys(byMonth).sort();
+            chartInstances.monthly=new Chart(document.getElementById('monthlySalesChart'),{
+                type:'bar',
+                data:{labels:months,datasets:[{data:months.map(m=>byMonth[m]),backgroundColor:'#6366f1',borderRadius:8}]},
+                options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,title:{display:true,text:`Revenue (${cur})`,font:{size:11},color:'#9ca3af'}}}}
+            });
+        }
+
+        // ── REFRESH ───────────────────────────────────────────────
+        function refresh() {
+            const cur=db.settings.currency;
+            const totalSales=db.sales.reduce((a,b)=>a+b.total,0);
+            const totalCosts=db.sales.reduce((a,b)=>a+(b.costBasis||0),0);
+            const totalExp=db.expenses.reduce((a,b)=>a+b.amount,0);
+            const profit=totalSales-totalCosts-totalExp;
+
+            // "To Be Collected" = sum of remaining utang balances (accounts for partial payments)
+            const unpaidUtang=db.utang.filter(u=>!u.paid);
+            const utangTotal=unpaidUtang.reduce((a,b)=>a+(b.balance!==undefined?b.balance:b.amount),0);
+
+            // "Collected" = total sales minus remaining utang balances
+            const totalCollected=totalSales-utangTotal;
+
+            const td=today();
+            const todaySales=db.sales.filter(s=>s.date===td);
+            const todayAmt=todaySales.reduce((a,b)=>a+b.total,0);
+
+            // Today's utang remaining balances
+            const todayUtangIds=new Set(todaySales.filter(s=>s.status==='Unpaid').map(s=>s.id));
+            const todayToCollect=db.utang
+                .filter(u=>!u.paid && u.saleRef && todayUtangIds.has(u.saleRef))
+                .reduce((a,b)=>a+(b.balance!==undefined?b.balance:b.amount),0);
+            // For manually-added utang (no saleRef), include those dated today
+            const todayManualUtang=db.utang
+                .filter(u=>!u.paid && !u.saleRef && u.date===td)
+                .reduce((a,b)=>a+(b.balance!==undefined?b.balance:b.amount),0);
+            const todayTotalToCollect=todayToCollect+todayManualUtang;
+            const todayCollected=todayAmt-todayTotalToCollect;
+
+            // Home hero
+            document.getElementById('homeStoreName').innerText=db.settings.company;
+            document.getElementById('homeProfitTotal').innerText=`${cur} ${profit.toFixed(2)}`;
+            document.getElementById('homeTotalSales').innerText=`${cur}${totalSales.toFixed(2)}`;
+            document.getElementById('homeTotalCollected').innerText=`${cur}${totalCollected.toFixed(2)}`;
+            document.getElementById('homeTotalToCollect').innerText=`${cur}${utangTotal.toFixed(2)}`;
+            document.getElementById('homeTotalCosts').innerText=`${cur}${totalCosts.toFixed(2)}`;
+            document.getElementById('homeTotalExp').innerText=`${cur}${totalExp.toFixed(2)}`;
+
+            // Today's Sales card
+            document.getElementById('homeTodayAmt').innerText=`${cur} ${todayAmt.toFixed(2)}`;
+            document.getElementById('homeTodayPaidAmt').innerText=`${cur}${Math.max(0,todayCollected).toFixed(2)}`;
+            document.getElementById('homeTodayUnpaidAmt').innerText=`${cur}${todayTotalToCollect.toFixed(2)}`;
+
+            // All-Time Sales card
+            document.getElementById('homeAllTimeAmt').innerText=`${cur} ${totalSales.toFixed(2)}`;
+            document.getElementById('homeAllPaidAmt').innerText=`${cur}${totalCollected.toFixed(2)}`;
+            document.getElementById('homeAllUnpaidAmt').innerText=`${cur}${utangTotal.toFixed(2)}`;
+
+            document.getElementById('homeUtangAlert').classList.toggle('hidden',unpaidUtang.length===0);
+            document.getElementById('homeUtangAmt').innerText=`${cur}${utangTotal.toFixed(2)}`;
+            document.getElementById('expTabTotal').innerText=`${cur} ${totalExp.toFixed(2)}`;
+            document.getElementById('utangTabTotal').innerText=`${cur} ${utangTotal.toFixed(2)}`;
+
+            // Settings sync
+            document.getElementById('setCompany').value=db.settings.company;
+            document.getElementById('setCurr').value=db.settings.currency;
+            document.getElementById('setTheme').value=db.settings.theme;
+            document.getElementById('setLow').value=db.settings.lowStock;
+            document.getElementById('setMilestone').value=db.settings.milestone||'';
+            document.body.className='pb-28 '+db.settings.theme;
+
+            // Autocomplete datalist
+            const dl=document.getElementById('itemNameSuggestions');
+            dl.innerHTML='';
+            [...new Set(db.inventory.filter(i=>!i.deleted).map(i=>i.name))].forEach(n=>{
+                const opt=document.createElement('option'); opt.value=n; dl.appendChild(opt);
+            });
+
+            // Milestone check
+            checkMilestone(profit);
+
+            renderInventory(); renderExpenses(); renderSales();
+        }
+
+        // ── CONFETTI & MILESTONE ──────────────────────────────────
+        let confettiParticles=[], confettiAnim=null;
+        function launchConfetti() {
+            const canvas=document.getElementById('confettiCanvas');
+            const ctx=canvas.getContext('2d');
+            canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+            canvas.style.display='block';
+            const colors=['#2563eb','#10b981','#f59e0b','#ef4444','#6366f1','#ec4899','#f97316'];
+            confettiParticles=Array.from({length:120},()=>({
+                x:Math.random()*canvas.width, y:-10,
+                r:Math.random()*6+4,
+                d:Math.random()*120+20,
+                color:colors[Math.floor(Math.random()*colors.length)],
+                tilt:Math.random()*10-10,
+                tiltAngle:0,
+                tiltSpeed:Math.random()*0.1+0.05
+            }));
+            let tick=0;
+            function draw(){
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                confettiParticles.forEach(p=>{
+                    p.tiltAngle+=p.tiltSpeed;
+                    p.y+=Math.cos(p.d)+1.5;
+                    p.x+=Math.sin(tick/50);
+                    p.tilt=Math.sin(p.tiltAngle)*12;
+                    ctx.beginPath();
+                    ctx.lineWidth=p.r;
+                    ctx.strokeStyle=p.color;
+                    ctx.moveTo(p.x+p.tilt+p.r/2,p.y);
+                    ctx.lineTo(p.x+p.tilt,p.y+p.tilt+p.r/2);
+                    ctx.stroke();
+                });
+                tick++;
+                if(tick<180) confettiAnim=requestAnimationFrame(draw);
+                else { canvas.style.display='none'; ctx.clearRect(0,0,canvas.width,canvas.height); }
+            }
+            if(confettiAnim) cancelAnimationFrame(confettiAnim);
+            draw();
+        }
+        function checkMilestone(profit) {
+            const m=db.settings.milestone;
+            if(!m||m<=0||profit<=0) return;
+            const currentLevel=Math.floor(profit/m);
+            const lastLevel=Math.floor((db.settings.lastMilestone||0)/m);
+            if(currentLevel>lastLevel && currentLevel>=1) {
+                db.settings.lastMilestone=profit;
+                localStorage.setItem('lakoLog_v1_db',JSON.stringify(db));
+                const cur=db.settings.currency;
+                document.getElementById('milestoneMsg').innerText=`Your estimated profit just hit ${cur}${(currentLevel*m).toLocaleString()}! You're doing great! 💪`;
+                document.getElementById('milestoneBanner').style.display='block';
+                launchConfetti();
+            }
+        }
+        function closeMilestone() {
+            document.getElementById('milestoneBanner').style.display='none';
+            const canvas=document.getElementById('confettiCanvas');
+            canvas.style.display='none';
+            if(confettiAnim) cancelAnimationFrame(confettiAnim);
+        }
+
+        // ── PWA INSTALL ───────────────────────────────────────────
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show install banner after a short delay
+            setTimeout(() => {
+                if (!window.matchMedia('(display-mode: standalone)').matches) {
+                    document.getElementById('installBanner').style.display = 'block';
+                }
+            }, 3000);
+        });
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            document.getElementById('installBanner').style.display = 'none';
+        });
+        // iOS detection
+        const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+        const isInStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        if (isIos && !isInStandalone && !localStorage.getItem('iosDismissed')) {
+            setTimeout(() => { document.getElementById('iosInstallBanner').style.display = 'block'; }, 3000);
+        }
+
+        window.onload = () => {
+            document.body.className='pb-28 '+db.settings.theme;
+            document.getElementById('expDate').value=today();
+            document.getElementById('utangDate').value=today();
+            refresh();
+            // Show onboarding for new users
+            if (!db.settings.onboarded) {
+                document.getElementById('onboardingOverlay').style.display = 'block';
+            } else {
+                checkBackupNudge();
+            }
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(e => console.log('SW reg failed:', e));
+            }
+        };
+    </script>
+</body>
+</html>
