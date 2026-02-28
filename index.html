@@ -530,6 +530,12 @@
                     📥 Import Data<input type="file" onchange="importData(event)" class="hidden">
                 </label>
             </div>
+            <!-- Premium Status -->
+            <div id="premiumStatusBox" style="background:#f9fafb;border-radius:16px;padding:14px;margin-bottom:16px;text-align:center">
+                <div id="premiumStatusText" style="font-size:13px;font-weight:700;margin-bottom:6px"></div>
+                <div id="premiumStatusSub" style="font-size:11px;color:#6b7280;margin-bottom:10px"></div>
+                <button id="premiumStatusBtn" onclick="openPaywall()" style="font-size:11px;font-weight:700;padding:8px 16px;border-radius:10px;border:none;cursor:pointer"></button>
+            </div>
             <button onclick="closeModal('settingsModal')" class="btn-primary" style="background:#111827">CLOSE</button>
             <div id="settingsSavedMsg">✓ Settings saved</div>
         </div>
@@ -632,6 +638,33 @@
         </div>
     </div>
 
+    <!-- PAYWALL MODAL -->
+    <div id="paywallModal" class="modal" style="z-index:600">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden">
+            <div style="background:linear-gradient(135deg,#f48c06,#e07b00);padding:28px 24px 20px;text-align:center">
+                <div style="font-size:52px;margin-bottom:10px">🏪</div>
+                <h2 class="syne" style="color:#fff;font-size:20px;margin-bottom:4px">Unlock LakoLog Premium</h2>
+                <p style="color:rgba(255,255,255,0.85);font-size:12px;line-height:1.5">You have reached the 10-product free limit.<br>Upgrade to track unlimited everything.</p>
+            </div>
+            <div style="padding:20px 24px">
+                <div style="background:#f9fafb;border-radius:16px;padding:14px;margin-bottom:16px;font-size:12px">
+                    <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px;font-size:11px;color:#6b7280"><span>FREE VERSION</span><span>PREMIUM</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>📦 Up to 10 products</span><span style="color:#16a34a;font-weight:700">✅ Unlimited</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>💰 Sales tracking</span><span style="color:#16a34a;font-weight:700">✅ Unlimited</span></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>📋 Utang records</span><span style="color:#16a34a;font-weight:700">✅ Unlimited</span></div>
+                    <div style="display:flex;justify-content:space-between"><span>📉 Expense logging</span><span style="color:#16a34a;font-weight:700">✅ Unlimited</span></div>
+                </div>
+                <a href="https://lakolako2026.gumroad.com/l/lakologpremium" target="_blank" style="display:block;background:linear-gradient(135deg,#f48c06,#e07b00);color:#fff;padding:14px;border-radius:16px;font-weight:700;font-size:14px;text-align:center;text-decoration:none;margin-bottom:10px;font-family:Syne,sans-serif">🔓 Lifetime Access — ₱299 (one-time)</a>
+                <a href="https://lakolako2026.gumroad.com/l/lakologpremium" target="_blank" style="display:block;background:#fff;color:#f48c06;padding:14px;border-radius:16px;font-weight:700;font-size:14px;text-align:center;text-decoration:none;margin-bottom:16px;font-family:Syne,sans-serif;border:2px solid #f48c06">📅 Monthly Access — ₱99/month</a>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><div style="flex:1;height:1px;background:#e5e7eb"></div><span style="font-size:11px;color:#9ca3af;font-weight:700">ALREADY PURCHASED?</span><div style="flex:1;height:1px;background:#e5e7eb"></div></div>
+                <input type="text" id="licenseKeyInput" placeholder="Paste license key from receipt email" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:12px;font-size:12px;outline:none;font-family:DM Sans,sans-serif;box-sizing:border-box;margin-bottom:8px" oninput="this.value=this.value.toUpperCase()">
+                <div id="licenseError" style="display:none;color:#ef4444;font-size:11px;font-weight:700;margin-bottom:8px;text-align:center"></div>
+                <button onclick="activateLicense()" style="width:100%;background:#111827;color:#fff;padding:12px;border-radius:12px;font-weight:700;font-size:13px;border:none;cursor:pointer;font-family:Syne,sans-serif;margin-bottom:10px">✅ ACTIVATE LICENSE KEY</button>
+                <button onclick="closeModal('paywallModal')" style="width:100%;background:none;border:none;color:#9ca3af;font-size:11px;font-weight:700;cursor:pointer;padding:4px">Maybe later</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let db = JSON.parse(localStorage.getItem('lakoLog_v1_db')) || {
             inventory:[], sales:[], expenses:[], utang:[],
@@ -644,12 +677,77 @@
         if (db.settings.lastBackup === undefined) db.settings.lastBackup = null;
         if (db.settings.saleCount === undefined) db.settings.saleCount = db.sales.length;
 
+        // ── PREMIUM / LICENSE ────────────────────────────────────
+        const GUMROAD_PRODUCT_ID = 'jH8WCo5HEGCIev8hjYS7Vg==';
+        const FREE_PRODUCT_LIMIT = 10;
+
+        function isPremium() {
+            const license = localStorage.getItem('lakoLog_license');
+            if (!license) return false;
+            try {
+                const data = JSON.parse(license);
+                if (data.type === 'lifetime') return true;
+                if (data.type === 'monthly') {
+                    return new Date(data.expiry) > new Date();
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        function getActiveProductCount() {
+            return db.inventory.filter(i => !i.deleted).length;
+        }
+
+        async function activateLicense() {
+            const key = document.getElementById('licenseKeyInput').value.trim();
+            const errEl = document.getElementById('licenseError');
+            errEl.style.display = 'none';
+            if (!key) { errEl.textContent = 'Please enter your license key.'; errEl.style.display = 'block'; return; }
+            const btn = document.querySelector('#paywallModal button[onclick="activateLicense()"]');
+            const origText = btn.textContent;
+            btn.textContent = 'Verifying...'; btn.disabled = true;
+            try {
+                const res = await fetch('https://api.gumroad.com/v2/licenses/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'product_id=' + encodeURIComponent(GUMROAD_PRODUCT_ID) + '&license_key=' + encodeURIComponent(key)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const variantName = (data.purchase && data.purchase.variants) ? data.purchase.variants.toLowerCase() : '';
+                    const isMonthly = variantName.includes('month');
+                    const licenseData = isMonthly
+                        ? { key, type: 'monthly', expiry: new Date(Date.now() + 30*24*60*60*1000).toISOString(), activatedAt: new Date().toISOString() }
+                        : { key, type: 'lifetime', activatedAt: new Date().toISOString() };
+                    localStorage.setItem('lakoLog_license', JSON.stringify(licenseData));
+                    closeModal('paywallModal');
+                    showToast('🎉 Premium activated! Unlimited access unlocked.');
+                } else {
+                    errEl.textContent = 'Invalid or already used license key. Check your receipt email.';
+                    errEl.style.display = 'block';
+                }
+            } catch(e) {
+                if (/^[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$/.test(key)) {
+                    localStorage.setItem('lakoLog_license', JSON.stringify({ key, type: 'lifetime', activatedAt: new Date().toISOString(), offlineActivated: true }));
+                    closeModal('paywallModal');
+                    showToast('🎉 Premium activated! Unlimited access unlocked.');
+                } else {
+                    errEl.textContent = 'Could not verify. Check your internet connection and try again.';
+                    errEl.style.display = 'block';
+                }
+            }
+            btn.textContent = origText; btn.disabled = false;
+        }
+
         let activeItem = null, activeUtangIdx = null, chartInstances = {};
         let undoStack = null, undoTimer = null;
 
         const today = () => new Date().toISOString().split('T')[0];
         const save  = () => { localStorage.setItem('lakoLog_v1_db', JSON.stringify(db)); refresh(); };
-        const openModal  = id => document.getElementById(id).classList.add('active');
+        const openModal = id => {
+            document.getElementById(id).classList.add('active');
+            if (id === 'settingsModal') updatePremiumStatus();
+        };
         const closeModal = id => document.getElementById(id).classList.remove('active');
 
         function showView(name) {
@@ -859,6 +957,15 @@
             document.getElementById('addProjProfit').style.color = projProfit >= 0 ? '#16a34a' : '#dc2626';
         }
         function saveItem() {
+            // Premium gate: check product limit for new items only
+            const isEditing = !!document.getElementById('editItemId').value;
+            if (!isEditing && !isPremium() && getActiveProductCount() >= FREE_PRODUCT_LIMIT) {
+                closeModal('addItemModal');
+                document.getElementById('licenseKeyInput').value = '';
+                document.getElementById('licenseError').style.display = 'none';
+                openModal('paywallModal');
+                return;
+            }
             const name=document.getElementById('addItemName').value.trim();
             const qty=parseInt(document.getElementById('addQty').value);
             const totalCost=parseFloat(document.getElementById('addTotalCost').value);
