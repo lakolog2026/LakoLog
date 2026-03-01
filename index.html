@@ -1579,4 +1579,15 @@
             refresh();
             // Show onboarding for new users
             if (!db.settings.onboarded) {
-                document.getElementBy
+                document.getElementById('onboardingOverlay').style.display = 'block';
+            } else {
+                checkBackupNudge();
+            }
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(e => console.log('SW reg failed:', e));
+            }
+        };
+    </script>
+</body>
+</html>
