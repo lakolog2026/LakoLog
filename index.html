@@ -784,6 +784,17 @@
             const btn = document.querySelector('#paywallModal button[onclick="activateLicense()"]');
             const origText = btn.textContent;
             btn.textContent = 'Verifying...'; btn.disabled = true;
+
+            // ── Check LAKO- manual keys FIRST (GCash/Maya buyers) ──
+            if (key.startsWith('LAKO-') && MANUAL_LICENSE_KEYS.includes(key)) {
+                localStorage.setItem('lakoLog_license', JSON.stringify({ key, type: 'lifetime', activatedAt: new Date().toISOString(), source: 'manual' }));
+                closeModal('paywallModal');
+                showToast('🎉 Premium activated! Unlimited access unlocked.');
+                btn.textContent = origText; btn.disabled = false;
+                return;
+            }
+
+            // ── Then try Gumroad API for card/PayPal buyers ──
             try {
                 const res = await fetch('https://api.gumroad.com/v2/licenses/verify', {
                     method: 'POST',
