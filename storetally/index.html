@@ -142,12 +142,12 @@
                 <div class="space-y-4">
                     <div>
                         <span class="section-label">Store / Business Name</span>
-                        <input type="text" id="onboardName" placeholder="e.g. Aling Nena's Store" class="w-full p-4 border-2 rounded-2xl outline-none text-sm" style="border-color:#e5e7eb">
+                        <input type="text" id="onboardName" placeholder="e.g. My Shop / Xyz Apparel" class="w-full p-4 border-2 rounded-2xl outline-none text-sm" style="border-color:#e5e7eb">
                     </div>
                     <div>
                         <span class="section-label">Currency</span>
                         <select id="onboardCurr" class="w-full p-4 border-2 rounded-2xl bg-white text-sm outline-none" style="border-color:#e5e7eb">
-                            <option value="$">Philippine Peso ($)</option>
+                            <option value="$" selected>US Dollar ($)</option>
                             <option value="$">US Dollar ($)</option>
                             <option value="€">Euro (€)</option>
                             <option value="£">British Pound (£)</option>
@@ -528,8 +528,28 @@
             <input type="text" id="setCompany" oninput="saveSet()" class="w-full p-3 border rounded-xl mb-4 text-sm outline-none">
             <span class="section-label">Currency</span>
             <select id="setCurr" onchange="saveSet()" class="w-full p-3 border rounded-xl mb-4 bg-gray-50 text-sm outline-none">
-                <option value="$">USD ($)</option><option value="$">USD ($)</option><option value="€">EUR (€)</option><option value="£">GBP (£)</option>
-            </select>
+                            <option value="$" selected>US Dollar ($)</option>
+                            <option value="₱">Philippine Peso (₱)</option>
+                            <option value="€">Euro (€)</option>
+                            <option value="£">British Pound (£)</option>
+                            <option value="¥">Japanese Yen (¥)</option>
+                            <option value="₩">Korean Won (₩)</option>
+                            <option value="Rp">Indonesian Rupiah (Rp)</option>
+                            <option value="RM">Malaysian Ringgit (RM)</option>
+                            <option value="₹">Indian Rupee (₹)</option>
+                            <option value="฿">Thai Baht (฿)</option>
+                            <option value="₫">Vietnamese Dong (₫)</option>
+                            <option value="S$">Singapore Dollar (S$)</option>
+                            <option value="A$">Australian Dollar (A$)</option>
+                            <option value="C$">Canadian Dollar (C$)</option>
+                            <option value="R">South African Rand (R)</option>
+                            <option value="KSh">Kenyan Shilling (KSh)</option>
+                            <option value="NGN">Nigerian Naira (₦)</option>
+                            <option value="GH₵">Ghanaian Cedi (GH₵)</option>
+                            <option value="R$">Brazilian Real (R$)</option>
+                            <option value="MXN">Mexican Peso (MX$)</option>
+                            <option value="COP">Colombian Peso (COP$)</option>
+                            </select>
             <span class="section-label">Visual Theme</span>
             <select id="setTheme" onchange="saveSet()" class="w-full p-3 border rounded-xl mb-4 bg-gray-50 text-sm outline-none">
                 <option value="theme-blue">Blue Pro</option><option value="theme-green">Success Green</option><option value="theme-dark">Midnight Dark</option>
@@ -1692,4 +1712,3 @@
     </script>
 </body>
 </html>
-
