@@ -300,15 +300,58 @@
             </div>
 
             <div class="hero-card mb-4">
+                <!-- Estimated Profit — big headline number -->
                 <p class="text-[10px] uppercase tracking-widest opacity-75 mb-1">Estimated Profit</p>
-                <h2 id="homeProfitTotal" class="text-4xl font-black mb-4 syne">$ 0.00</h2>
-                <div class="grid grid-cols-1 gap-1 text-[11px] border-t border-white/20 pt-3 relative z-10">
-                    <div class="flex justify-between"><span class="opacity-75">Total Sales:</span><b id="homeTotalSales">$0.00</b></div>
-                    <div class="flex justify-between pl-3"><span class="opacity-60">↳ Collected:</span><span id="homeTotalCollected" class="opacity-90">$0.00</span></div>
-                    <div class="flex justify-between pl-3"><span class="opacity-60">↳ To Be Collected:</span><span id="homeTotalToCollect" class="opacity-90">$0.00</span></div>
-                    <div class="flex justify-between mt-1"><span class="opacity-75">Cost of Goods Sold:</span><b id="homeTotalCosts">$0.00</b></div>
-                    <div class="flex justify-between"><span class="opacity-75">Total Expenses:</span><b id="homeTotalExp">$0.00</b></div>
+                <h2 id="homeProfitTotal" class="text-4xl font-black mb-1 syne">$ 0.00</h2>
+                <p class="text-[9px] opacity-50 mb-3" style="letter-spacing:0.04em">Total Sales &minus; Cost of Goods Sold &minus; Total Expenses</p>
+
+                <!-- Divider -->
+                <div style="border-top:1px solid rgba(255,255,255,0.15);margin-bottom:10px"></div>
+
+                <!-- TOTAL SALES block -->
+                <div style="margin-bottom:8px">
+                    <div class="flex justify-between items-center" style="font-size:12px">
+                        <span style="font-weight:700;opacity:0.9">Total Sales</span>
+                        <b id="homeTotalSales" style="font-size:13px">$0.00</b>
+                    </div>
+                    <!-- Breakdown indented under Total Sales -->
+                    <div style="margin-top:4px;padding-left:12px;border-left:2px solid rgba(255,255,255,0.2);margin-left:4px">
+                        <div class="flex justify-between items-center" style="font-size:10px;margin-bottom:2px">
+                            <span style="opacity:0.6">↳ Collected</span>
+                            <span id="homeTotalCollected" style="opacity:0.85;font-weight:600">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center" style="font-size:10px">
+                            <span style="opacity:0.6">↳ To Be Collected (Credit)</span>
+                            <span id="homeTotalToCollect" style="opacity:0.85;font-weight:600;color:#fde68a">$0.00</span>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Divider -->
+                <div style="border-top:1px dashed rgba(255,255,255,0.1);margin-bottom:8px"></div>
+
+                <!-- DEDUCTIONS block -->
+                <div style="margin-bottom:4px">
+                    <div class="flex justify-between items-center" style="font-size:11px;margin-bottom:4px">
+                        <span style="opacity:0.7">
+                            <span style="opacity:0.5;font-size:10px;margin-right:3px">−</span>Cost of Goods Sold
+                        </span>
+                        <b id="homeTotalCosts" style="font-size:11px;opacity:0.85">$0.00</b>
+                    </div>
+                    <div class="flex justify-between items-center" style="font-size:11px">
+                        <span style="opacity:0.7">
+                            <span style="opacity:0.5;font-size:10px;margin-right:3px">−</span>Total Expenses
+                        </span>
+                        <b id="homeTotalExp" style="font-size:11px;opacity:0.85">$0.00</b>
+                    </div>
+                </div>
+
+                <!-- Result line -->
+                <div style="border-top:1px solid rgba(255,255,255,0.25);margin-top:8px;padding-top:6px" class="flex justify-between items-center">
+                    <span style="font-size:10px;font-weight:700;opacity:0.7;letter-spacing:0.05em;text-transform:uppercase">= Estimated Profit</span>
+                    <span style="font-size:12px;font-weight:900;opacity:0.95" id="homeProfitRepeat">$ 0.00</span>
+                </div>
+
                 <div id="lowStockBadge" onclick="showLowStockDetails()" class="hidden" style="position:absolute;top:16px;right:16px;background:#f97316;color:#fff;font-size:10px;padding:4px 12px;border-radius:999px;font-weight:700;cursor:pointer;z-index:10;animation:pulse 2s infinite;">⚠️ LOW STOCK</div>
             </div>
 
@@ -555,7 +598,7 @@
                         <div class="flex border rounded-xl overflow-hidden">
                             <input type="number" id="sellDisc" oninput="calcTotal()" class="w-20 p-3 text-sm outline-none" placeholder="0" value="0">
                             <select id="sellDiscType" onchange="calcTotal()" class="text-xs bg-gray-50 border-l px-1 outline-none">
-                                <option value="amt">$</option><option value="per">%</option>
+                                <option value="amt" id="discountCurrOpt">$</option><option value="per">%</option>
                             </select>
                         </div>
                     </div>
@@ -638,7 +681,7 @@
             <p style="font-size:11px;color:#6b7280;margin-bottom:8px">Celebrate with confetti every time profit reaches this amount (or a multiple of it). Set to 0 to disable.</p>
             <div class="flex items-center gap-2 mb-6">
                 <input type="number" id="setMilestone" oninput="saveSet()" placeholder="e.g. 5000" class="w-32 p-3 border rounded-xl text-sm outline-none">
-                <span class="font-bold text-gray-500 text-sm">$ per milestone</span>
+                <span class="font-bold text-gray-500 text-sm" id="milestoneLabel">$ per milestone</span>
             </div>
             <hr class="mb-4">
             <span class="section-label">Data Management</span>
@@ -757,7 +800,7 @@
 
             <button id="creditMarkPaidBtn" onclick="markCreditPaid()" class="btn-primary mb-2" style="background:#16a34a">✅ MARK FULLY PAID</button>
             <button onclick="deleteCredit()" class="w-full bg-red-50 text-red-600 py-3 rounded-2xl font-bold mb-2 text-sm border-0 cursor-pointer">🗑️ DELETE RECORD</button>
-            <button onclick="closeModal('creditDetailModal')" class="w-full text-gray-400 text-xs font-bold border-0 bg-transparent cursor-pointer">CANCEL</button>
+            <button onclick="closeModal('creditDetailModal')" class="w-full text-gray-400 text-xs font-bold border-0 bg-transparent cursor-pointer">SAVE</button>
         </div>
     </div>
 
@@ -1039,6 +1082,7 @@
             db.settings.company = name;
             db.settings.currency = curr;
             db.settings.onboarded = true;
+            applyCurrencyToPlaceholders();
             localStorage.setItem('goodsLog_v1_db', JSON.stringify(db));
             document.getElementById('onboardingOverlay').style.display = 'none';
             refresh();
@@ -1098,6 +1142,7 @@
         function saveSet() {
             db.settings.company   = document.getElementById('setCompany').value;
             db.settings.currency  = document.getElementById('setCurr').value;
+            applyCurrencyToPlaceholders();
             db.settings.theme     = document.getElementById('setTheme').value;
             db.settings.lowStock  = parseInt(document.getElementById('setLow').value)||5;
             db.settings.milestone = parseFloat(document.getElementById('setMilestone').value)||0;
@@ -1133,7 +1178,7 @@
             document.getElementById('addDate').value=today();
             ['addItemName','addDesc','addQty','addTotalCost','addPrice'].forEach(id=>document.getElementById(id).value='');
             document.getElementById('addCost').value='';
-            document.getElementById('addProjProfit').innerText='$ 0.00';
+            document.getElementById('addProjProfit').innerText=`${db.settings.currency} 0.00`;
             document.getElementById('addUnit').value='Pieces';
             document.getElementById('addUnitOther').classList.add('hidden');
             openModal('addItemModal');
@@ -1614,6 +1659,34 @@
         }
 
         // ── REFRESH ───────────────────────────────────────────────
+
+        // ── Fix currency symbol in all static placeholders ─────────────────
+        function applyCurrencyToPlaceholders() {
+            const cur = db.settings.currency || '$';
+            // Replace all visible $ placeholder text in stat elements
+            const els = document.querySelectorAll(
+                '#homeProfitTotal, #homeTodayAmt, #homeAllTimeAmt, ' +
+                '#creditTabTotal, #expTabTotal, #projectedProfitAmt, ' +
+                '#adjustLossAmt, #addProjProfit, ' +
+                '#homeTotalSales, #homeTotalCollected, #homeTotalToCollect, ' +
+                '#homeTotalCosts, #homeTotalExp, #homeCreditAmt, ' +
+                '#projStockRevenue, #projStockCost, ' +
+                '#homeTodayPaidAmt, #homeTodayUnpaidAmt, ' +
+                '#homeAllPaidAmt, #homeAllUnpaidAmt, ' +
+                '#homeProfitRepeat'
+            );
+            els.forEach(el => {
+                if (el.innerText && el.innerText.trim().startsWith('$')) {
+                    el.innerText = el.innerText.replace(/^\$/, cur);
+                }
+            });
+            const mlabel = document.getElementById('milestoneLabel');
+            if (mlabel) mlabel.innerText = cur + ' per milestone';
+            const discOpt = document.getElementById('discountCurrOpt');
+            if (discOpt) discOpt.innerText = cur;
+
+        }
+
         function refresh() {
             const cur=db.settings.currency;
             const totalSales=db.sales.reduce((a,b)=>a+b.total,0);
@@ -1647,6 +1720,7 @@
             // Home hero
             document.getElementById('homeStoreName').innerText=db.settings.company;
             document.getElementById('homeProfitTotal').innerText=`${cur} ${profit.toFixed(2)}`;
+            document.getElementById('homeProfitRepeat').innerText=`${cur} ${profit.toFixed(2)}`;
             document.getElementById('homeTotalSales').innerText=`${cur}${totalSales.toFixed(2)}`;
             document.getElementById('homeTotalCollected').innerText=`${cur}${totalCollected.toFixed(2)}`;
             document.getElementById('homeTotalToCollect').innerText=`${cur}${creditTotal.toFixed(2)}`;
